@@ -17,7 +17,11 @@
 * limitations under the License.
 *****************************************************************/
 #include "Fresponze.h"
+#ifdef WINDOWS_PLATFORM
 #include "FresponzeWasapiHardware.h"
+#else
+#include <stdarg.h>
+#endif
 #include "FresponzeAdvancedMixer.h"
 
 void* hModule = nullptr;
@@ -93,7 +97,7 @@ TypeToLog(long long count)
 	OutputDebugStringA(outputString);
 	OutputDebugStringA("\n");
 #else
-	printf("%s%s\n", outputString, Text);
+	printf("%s%s\n", outputString, countString);
 #endif
 }
 
@@ -108,8 +112,10 @@ CFresponze::GetHardwareInterface(
 	{
 	case eEndpointNoneType:
 	case eEndpointWASAPIType:
+#ifdef WINDOWS_PLATFORM
 		*ppHardwareInterface = (void*)(new CWASAPIAudioHardware((IAudioCallback*)pCustomCallback));
 		break;
+#endif
 	case eEndpointXAudio2Type:
 #if 0
 		*ppHardwareInterface = (void*)(new CXAudio2AudioHardware((IAudioCallback*)pCustomCallback));

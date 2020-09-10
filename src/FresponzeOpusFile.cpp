@@ -153,7 +153,7 @@ COpusMediaResource::Read(fr_i64 FramesCount, fr_f32** ppFloatData)
 
 	/* Translate current frames count for output buffer to file format frames count */
 	CalculateFrames64(FramesCount, outputFormat.SampleRate, formatOfFile.SampleRate, frame_out);
-	transferBuffers.Resize(formatOfFile.Channels, (fr_i32)max(FramesCount, frame_out));
+	transferBuffers.Resize(formatOfFile.Channels, (fr_i32)std::max(FramesCount, frame_out));
 	tempBuffer.Resize(OPUS_BUFFER);
 	FileReadSize = (fr_i32)frame_out;
 	while (FileReadSize) {
@@ -202,7 +202,7 @@ COpusMediaResource::Read(fr_i64 FramesCount, fr_f32** ppFloatData)
 		}
 	}
 	else {
-		for (fr_i64 i = 0; i < min(formatOfFile.Channels, outputFormat.Channels); i++) {
+		for (fr_i64 i = 0; i < std::min(formatOfFile.Channels, outputFormat.Channels); i++) {
 			memcpy(ppFloatData[i], transferBuffers.GetBufferData((fr_i32)i), FramesCount * sizeof(fr_f32));
 		}
 	}
@@ -210,7 +210,7 @@ COpusMediaResource::Read(fr_i64 FramesCount, fr_f32** ppFloatData)
 	CalculateFrames64(frame_out - FileReadSize, formatOfFile.SampleRate, outputFormat.SampleRate, ret64);
 	FSeek += frame_out - FileReadSize;
 	if (ret64 < FramesCount) {
-		for (fr_i64 i = 0; i < min(formatOfFile.Channels, outputFormat.Channels); i++) {
+		for (fr_i64 i = 0; i < std::min(formatOfFile.Channels, outputFormat.Channels); i++) {
 			memset(&ppFloatData[i][ret64], 0, (FramesCount - ret64) * sizeof(fr_f32));
 		}
 	}

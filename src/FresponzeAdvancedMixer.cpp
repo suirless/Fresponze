@@ -19,6 +19,7 @@
 #include "FresponzeWavFile.h"
 #include "FresponzeOpusFile.h"
 #include "FresponzeMasterEmitter.h"
+#include "FresponzeResonanceEmitter.h"
 
 #define RING_BUFFERS_COUNT 2
 
@@ -166,6 +167,7 @@ CAdvancedMixer::CreateEmitter(IBaseEmitter*& pEmitterToCreate, fr_i32 Type)
 	{
 	case 0: pEmitterToCreate = GetAdvancedEmitter(); break;
 	case 1: pEmitterToCreate = GetSteamEmitter(); break;
+	case 2: pEmitterToCreate = GetResonanceEmitter(); break;
 	default:
 		break;
 	}

@@ -1,5 +1,6 @@
-/**************************************************************************
-* Copyright (C) Anton Kovalev (vertver), 2019. All rights reserved.
+/*********************************************************************
+* Copyright (C) Anton Kovalev (vertver), 2019-2020. All rights reserved.
+* Copyright (C) Suirless, 2020. All rights reserved.
 * Fresponze - fast, simple and modern multimedia sound library
 * Apache-2 License
 **********************************************************************
@@ -632,7 +633,7 @@ public:
 		if (BuffersCount != CountOfBuffers) {
 			ppTempBuffers = (CBuffer<TYPE>**)FastMemAlloc(sizeof(void*) * CountOfBuffers);
 			if (ppBuffers) {
-				for (size_t i = 0; i < min(abs(BuffersCount), CountOfBuffers); i++) {
+				for (size_t i = 0; i < std::min(abs(BuffersCount), CountOfBuffers); i++) {
 					if (ppBuffers[i]) ppTempBuffers[i] = ppBuffers[i];
 				}
 			} else {
@@ -721,7 +722,7 @@ public:
 				return ReadSamples;
 			}
 
-			ReadSamples = min(BuffersSize - BufferPosition, WriteSamples);
+			ReadSamples = std::min(BuffersSize - BufferPosition, WriteSamples);
 			memcpy(&OutBuffer[SampleReturn], &pCurrentBuffer[BufferPosition], ReadSamples * sizeof(TYPE));
 			BufferPosition += ReadSamples;
 			SampleReturn += ReadSamples;
@@ -1161,6 +1162,7 @@ DoubleToFloat(
 	}
 }
 
+#ifdef WINDOWS_PLATFORM
 inline char* utf16_to_utf8(const wchar_t* _src) {
 	char* dst;
 	size_t  len;
@@ -1213,6 +1215,7 @@ inline char* utf16_to_utf8(const wchar_t* _src) {
 	dst[di++] = '\0';
 	return dst;
 }
+#endif
 
 #define _RELEASE(p) { if (p) { (p)->Release(); (p) = nullptr;} }
 #define ELEMENTSCOUNT(x) sizeof(x) / sizeof(sizeof(x[0]))
@@ -1267,7 +1270,25 @@ public:
 #else
 class CPosixEvent : public IBaseEvent
 {
+public:
+    CPosixEvent();
+    ~CPosixEvent();
 
+    void Raise() override;
+    void Reset() override;
+    void Wait() override;
+    bool Wait(fr_i32 TimeToWait) override;
+    bool IsRaised() override;
+
+    struct EventHandle
+    {
+        pthread_mutex_t mutex;
+        pthread_cond_t cond;
+        bool signaled;
+    };
+
+private:
+    EventHandle m_id;
 };
 #endif
 
@@ -1321,7 +1342,7 @@ riff_to_pcm(
 	format->SampleRate = header->sample_rate;
 }
 
-#define maxmin(a, minimum, maximum)  min(max(a, minimum), maximum)
+#define maxmin(a, minimum, maximum)  std::min(std::max(a, minimum), maximum)
 
 inline
 fr_f32
@@ -1337,7 +1358,7 @@ fr_i16
 f32toi16(fr_f32 fValue)
 {
 	fr_i16 iValue = 0;
-	iValue = maxmin(((fr_i16)(fValue * 32768.0f)), -32768, 32767);
+	iValue = (fr_i16)maxmin(((int)(fValue * 32768.0f)), -32768, 32767);
 	return iValue;
 }
 

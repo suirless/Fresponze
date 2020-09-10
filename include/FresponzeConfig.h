@@ -17,10 +17,6 @@
 * limitations under the License.
 *****************************************************************/
 
-#if defined(_WIN32) || defined(_WIN64)
-#define WINDOWS_PLATFORM 1
-#endif
-
 #ifdef WINDOWS_PLATFORM
 #ifdef DLL_PLATFORM
 #ifdef LIB_EXPORTS

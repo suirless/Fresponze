@@ -1,5 +1,6 @@
 /*********************************************************************
-* Copyright (C) Anton Kovalev (vertver), 2020. All rights reserved.
+* Copyright (C) Anton Kovalev (vertver), 2019-2020. All rights reserved.
+* Copyright (C) Suirless, 2020. All rights reserved.
 * Fresponze - fast, simple and modern multimedia sound library
 * Apache-2 License
 **********************************************************************
@@ -15,25 +16,66 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *****************************************************************/
-#include <windows.h>
 #include "Fresponze.h"
-#include "FresponzeFileSystemWindows.h"
 #include "FresponzeWavFile.h"
 #include "FresponzeListener.h"
 #include "FresponzeMixer.h"
+#include "FresponzeAlsaEnumerator.h"
 #include "FresponzeMasterEmitter.h"
 
-#ifdef _WIN32
+IFresponze* pFresponze = nullptr;
+
+#include "imgui.h"
+#include "spectrum.h"
+#ifdef WINDOWS_PLATFORM
+#include <windows.h>
+#include "FresponzeFileSystemWindows.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
-#include "spectrum.h"
-
-IFresponze* pFresponze = nullptr;
 
 #include <d3d11.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <tchar.h>
+#elif defined(LINUX_PLATFORM)
+#include <stdio.h>
+#include "imgui_impl_opengl3.h"
+
+// About Desktop OpenGL function loaders:
+//  Modern desktop OpenGL doesn't have a standard portable header file to load OpenGL function pointers.
+//  Helper libraries are often used for this purpose! Here we are supporting a few common ones (gl3w, glew, glad).
+//  You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
+#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
+#include <GL/gl3w.h>            // Initialize with gl3wInit()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
+#include <GL/glew.h>            // Initialize with glewInit()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
+#include <glad/glad.h>          // Initialize with gladLoadGL()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD2)
+#include <glad/gl.h>            // Initialize with gladLoadGL(...) or gladLoaderLoadGL()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
+#define GLFW_INCLUDE_NONE       // GLFW including OpenGL headers causes ambiguity or multiple definition errors.
+#include <glbinding/Binding.h>  // Initialize with glbinding::Binding::initialize()
+#include <glbinding/gl/gl.h>
+using namespace gl;
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3)
+#define GLFW_INCLUDE_NONE       // GLFW including OpenGL headers causes ambiguity or multiple definition errors.
+#include <glbinding/glbinding.h>// Initialize with glbinding::initialize()
+#include <glbinding/gl/gl.h>
+using namespace gl;
+#else
+#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#endif
+
+// Include glfw3.h after our OpenGL definitions
+#include <GLFW/glfw3.h>
+#include "imgui_impl_glfw.h"
+
+static void glfw_error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
+#elif defined(MACOS_PLATFORM)
 #endif
 
 class CCustomAudioCallback final : public IAudioCallback
@@ -98,7 +140,7 @@ IAudioCallback* pAudioCallback = nullptr;
 
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-#ifdef _WIN32
+#ifdef WINDOWS_PLATFORM
 // Data
 static ID3D11Device* g_pd3dDevice = NULL;
 static ID3D11DeviceContext* g_pd3dDeviceContext = NULL;
@@ -115,9 +157,13 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 void DrawImGui()
 {
-#ifdef _WIN32
+#ifdef WINDOWS_PLATFORM
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
+#else
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
 #endif
 	ImGui::NewFrame();
 
@@ -156,7 +202,7 @@ void DrawImGui()
 
 	ImGui::Render();
 
-#ifdef _WIN32
+#ifdef WINDOWS_PLATFORM
 	g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
 	g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -166,17 +212,16 @@ void DrawImGui()
 }
 
 // Main code
-int main(int, char**)
+int main()
 {
-#ifdef _WIN32
+#ifdef WINDOWS_PLATFORM
 	// Create application window
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("Fresponze device enumerating"), NULL };
 	::RegisterClassEx(&wc);
 	HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Fresponze custom callback"), WS_OVERLAPPEDWINDOW, 100, 100, 500, 300, NULL, NULL, wc.hInstance, NULL);
 
 	// Initialize Direct3D
-	if (!CreateDeviceD3D(hwnd))
-	{
+	if (!CreateDeviceD3D(hwnd)) {
 		CleanupDeviceD3D();
 		::UnregisterClass(wc.lpszClassName, wc.hInstance);
 		return 1;
@@ -185,6 +230,49 @@ int main(int, char**)
 	// Show the window
 	::ShowWindow(hwnd, SW_SHOWDEFAULT);
 	::UpdateWindow(hwnd);
+#else
+    // Setup window
+    glfwSetErrorCallback(glfw_error_callback);
+    if (!glfwInit())
+        return 1;
+
+    // GL 3.0 + GLSL 130
+    const char* glsl_version = "#version 130";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+
+    // Create window with graphics context
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
+    if (window == NULL)
+        return 1;
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1); // Enable vsync
+
+    // Initialize OpenGL loader
+#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
+    bool err = gl3wInit() != 0;
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
+    bool err = glewInit() != GLEW_OK;
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
+    bool err = gladLoadGL() == 0;
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD2)
+    bool err = gladLoadGL(glfwGetProcAddress) == 0; // glad2 recommend using the windowing library loader instead of the (optionally) bundled one.
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
+    bool err = false;
+    glbinding::Binding::initialize();
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3)
+    bool err = false;
+    glbinding::initialize([](const char* name) { return (glbinding::ProcAddress)glfwGetProcAddress(name); });
+#else
+    bool err = false; // If you use IMGUI_IMPL_OPENGL_LOADER_CUSTOM, your loader is likely to requires some form of initialization.
+#endif
+    if (err)
+    {
+        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+        return 1;
+    }
 #endif
 
 	// Setup Dear ImGui context
@@ -194,10 +282,14 @@ int main(int, char**)
 
 	ImGui::Spectrum::StyleColorsSpectrum();
 
-#ifdef _WIN32
+#ifdef WINDOWS_PLATFORM
 	// Setup Platform/Renderer bindings
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
+#else
+    // Setup Platform/Renderer bindings
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
 #endif
 
 	ImFontConfig font_config;
@@ -213,7 +305,7 @@ int main(int, char**)
 		0,
 	};
 
-	Fonts[0] = io.Fonts->AddFontFromFileTTF("Montserrat-Medium.ttf", 18.0f, &font_config, ranges);
+	Fonts[0] = io.Fonts->AddFontDefault();//io.Fonts->AddFontFromFileTTF("Montserrat-Medium.ttf", 18.0f, &font_config, ranges);
 	io.Fonts->Build();
 
 	// Our state
@@ -238,7 +330,14 @@ int main(int, char**)
 		pFresponze->GetHardwareInterface(eEndpointWASAPIType, pAudioCallback, (void**)&pAudioHardware);
 	}
 
-#ifdef _WIN32
+	IAudioEndpoint* pAudioEndpoint = nullptr;
+	EndpointInformation* pEndpointInfo = nullptr;
+    CAlsaAudioEnumerator enums;
+    enums.EnumerateDevices();
+	enums.GetOutputDeviceList(pEndpointInfo);
+	enums.GetDeviceByUUID(RenderType, pEndpointInfo[0].EndpointUUID, pAudioEndpoint);
+
+#ifdef WINDOWS_PLATFORM
 	// Main loop
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
@@ -260,13 +359,32 @@ int main(int, char**)
 	CleanupDeviceD3D();
 	DestroyWindow(hwnd);
 	UnregisterClass(wc.lpszClassName, wc.hInstance);
+#else
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+        DrawImGui();
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(window);
+    }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
 #endif
 
 	return 0;
 }
 
 // Helper functions
-#ifdef _WIN32
+#ifdef WINDOWS_PLATFORM
 bool CreateDeviceD3D(HWND hWnd)
 {
 	// Setup swap chain
