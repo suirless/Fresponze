@@ -37,7 +37,7 @@ enum AdvancedEmitterConfiguration
 	This is example how to create custom emitter with your name of 
 	company or custom controls 
 */
-class CAdvancedEmitter : public IBaseEmitter
+class CAdvancedEmitter final : public IBaseEmitter
 {
 protected:
 	/* Plugin process settings */
@@ -66,7 +66,7 @@ protected:
 
 public:
 	CAdvancedEmitter();
-	~CAdvancedEmitter();
+	~CAdvancedEmitter() override;
 
 	void AddEffect(IBaseEffect* pNewEffect) override;
 	void DeleteEffect(IBaseEffect* pNewEffect) override;

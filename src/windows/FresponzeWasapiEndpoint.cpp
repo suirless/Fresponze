@@ -432,17 +432,17 @@ CWASAPIAudioEnpoint::InitializeToPlay(fr_f32 Delay)
 		EndpointInfo.EndpointFormat.IsFloat = pTmp->SubFormat == FR_IID_KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
 	}
 
-	/* Verify to fail because this method can be failed on AC97 codecs. */
+	/* Verify fail because this method can be failed on AC97 codecs. */
 	if (FAILED(pAudioClient->GetDevicePeriod(&refTimeDefault, &refTimeMin))) {
 		refTimeDefault = 1000000;
 	}
 
-	/* We can't accept lower than minimal latency */
+	/* We can't accept lower value than minimal latency */
 	if (refTimeAccepted < refTimeMin) {
 		refTimeAccepted = refTimeDefault;
 	}
 
-	/* Try to initalize with custom delay time */
+	/* Try to initialize with custom delay time */
 	hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, dwStreamFlags, refTimeAccepted, 0, pWaveFormat, nullptr);
 	if (FAILED(hr)) {
 		hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeAccepted, 0, pWaveFormat, nullptr);
@@ -525,8 +525,6 @@ CWASAPIAudioEnpoint::Stop()
 		if (WaitForSingleObject(hThread, 1000) == WAIT_TIMEOUT) {
 			TerminateThread(hThread, (DWORD)-1);
 		}
-
-		if (pAudioClient) pAudioClient->Reset();
 
 		if (pTempBuffer) {
 			FreeFastMemory(pTempBuffer);

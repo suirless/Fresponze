@@ -1,7 +1,7 @@
 # Fresponze
 Fast, simple and modern middleware for game engines
 
-![Fresponze](https://github.com/suirless/Fresponze/blob/master/fresponze-suirless.png)
+![Fresponze](fresponze-suirless.png)
 
 # Features
 This library lets you write audio without any problems with system audio in C or C++ that
@@ -17,13 +17,15 @@ will compile and run on Windows, macOS and Linux.
 * [ImGui (for examples)](https://github.com/ocornut/imgui)
 
 # Audio backends
-* WASAPI (95%, perfectly working)
+* WASAPI (100%, finished)
 * XAudio2 (10%, in development)
 * ALSA (5%, in development)
 * AAudio (0%, in development)
 * AVAudioEngine (0%, in development)
 * CoreAudio (0%, in development)
 * PortAudio (0%, in development)
+* PlayStation 4/5 (0%, in development, for verified developers)
+* Xbox One/SX (0%, in development, for verified developers)
 
 We don't want to add DirectSound, WinMM and etc. because...
 * We don't like to support legacy code

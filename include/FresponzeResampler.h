@@ -22,6 +22,7 @@
 class IBaseResampler
 {
 public:
+    virtual ~IBaseResampler() = default;
 	virtual void Initialize(fr_i32 MaxBufferIn, fr_i32 InputSampleRate, fr_i32 OutputSampleRate, fr_i32 ChannelsCount, bool isLinear) = 0;
 	virtual void Destroy() = 0;
 	virtual void Reset(fr_i32 MaxBufferIn, fr_i32 InputSampleRate, fr_i32 OutputSampleRate, fr_i32 ChannelsCount, bool isLinear) = 0;
@@ -45,7 +46,7 @@ private:
 	r8b::CDSPResampler* resampler[MAX_CHANNELS] = {};
 
 public:
-	~CR8BrainResampler()
+	~CR8BrainResampler() override
 	{
 		Destroy();
 		doubleBuffers[0].Free();
@@ -66,8 +67,11 @@ public:
 	void Destroy() override
 	{
 		size_t index = 0;
-		for (size_t i = 0; i < MAX_CHANNELS; i++) {
-			if (resampler[i]) delete resampler[i];
+		for (auto& resampler_ptr : resampler) {
+			if (resampler_ptr) {
+                delete resampler_ptr;
+                resampler_ptr = nullptr;
+            }
 		}
 	}
 

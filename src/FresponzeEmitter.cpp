@@ -87,6 +87,11 @@ CAdvancedEmitter::SetFormat(PcmFormat* pFormat)
 {
 	ListenerFormat = *pFormat;
 	EffectNodeStruct* pNEffect = pFirstEffect;
+    BugAssert((pFormat->SampleRate && pFormat->Frames && pFormat->Channels), "Wrong input PCM Format");
+    if (!(pFormat->SampleRate && pFormat->Frames && pFormat->Channels)) {
+        return;
+    }
+
 	while (pNEffect) {
 		pNEffect->pEffect->SetFormat(pFormat);
 		pNEffect = pNEffect->pNext;
@@ -253,13 +258,11 @@ CAdvancedEmitter::ProcessInternal(fr_f32** ppData, fr_i32 Frames, fr_i32 Channel
 bool 
 CAdvancedEmitter::Process(fr_f32** ppData, fr_i32 Frames) 
 {
-	if (!pParentListener) return false;
+	if (!pParentListener || (EmittersState == eStopState || EmittersState == ePauseState)) return false;
 	fr_i32 BaseEmitterPosition = 0;
 	fr_i32 BaseListenerPosition = 0;
 	fr_i32 FramesReaded = 0;
 	IMediaListener* ThisListener = (IMediaListener*)pParentListener;
-
-	if (EmittersState == eStopState || EmittersState == ePauseState) return false;
 
 	/* Get current position of listener and emitter to reset old state */
 	BaseEmitterPosition = (fr_i32)GetPosition();

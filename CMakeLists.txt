@@ -34,6 +34,7 @@ set(UPDATE_RESONANCE_AUDIO_DEPS_DIR "${RESONANCE_AUDIO_DIR}/third_party")
 option(BUILD_RESONANCE_AUDIO_API "Build Resonance Audio API." ON)
 option(BUILD_FRESPONZE_STATIC "Build Fresponze in static mode." OFF)
 option(BUILD_STATIC "Build libraries in static mode." ON)
+option(BUILD_EXAMPLES "Build examples for Fresponze library." ON)
 
 find_package(Ogg CONFIG REQUIRED)
 find_package(Opus CONFIG REQUIRED)
@@ -55,7 +56,7 @@ if (WIN32)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.h"
     )
-elseif (APPLE)
+elseif (APPLE AND UNIX)
     file(GLOB FRESPONZE_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
@@ -138,7 +139,7 @@ elseif (UNIX AND NOT APPLE)
 endif() 
 
 target_include_directories(libfresponze PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/r8brain-free-src)
-target_include_directories(libfresponze PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/resonance-audio/api)
+target_include_directories(libfresponze PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/resonance-audio/resonance_audio/api)
 target_include_directories(libfresponze PUBLIC ${OPUS_INCLUDE_DIR}) 
 target_include_directories(libfresponze PUBLIC ${OGG_INCLUDE_DIR}) 
 
@@ -146,4 +147,41 @@ if (WIN32)
     target_link_libraries(libfresponze Opus::opus Ogg::ogg ResonanceAudioStatic ${OPUSFILE_LIBRARY} r8brain)
 else()
     target_link_libraries(libfresponze opus ogg opusfile ResonanceAudioStatic r8brain)
+endif()
+
+if (BUILD_EXAMPLES)
+    file(GLOB CUSTOM_CALLBACK_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/examples/custom_callback/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/examples/custom_callback/*.h"
+    )
+
+    file(GLOB DEVICE_MANAGMENT_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/examples/device_managment/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/examples/device_managment/*.h"
+    )
+
+    add_executable(device_managment ${DEVICE_MANAGMENT_SOURCES})
+    add_executable(custom_callback ${CUSTOM_CALLBACK_SOURCES})
+
+    download_project(
+            PROJ           imgui
+            GIT_REPOSITORY https://github.com/suirless/imgui.git
+            GIT_TAG        master
+            SOURCE_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/deps/imgui
+            UPDATE_DISCONNECTED 1
+    )
+
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/deps/imgui)
+
+    if (WIN32)
+        target_link_libraries(device_managment imgui libfresponze d3d11.lib)
+        target_link_libraries(custom_callback imgui libfresponze d3d11.lib)
+        if (MSVC)
+            set_property(TARGET device_managment PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples/device_managment")
+            set_property(TARGET device_managment PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples/custom_callback")
+        endif()
+    else()
+        target_link_libraries(device_managment imgui libfresponze)
+        target_link_libraries(custom_callback imgui libfresponze)
+    endif()
 endif()
