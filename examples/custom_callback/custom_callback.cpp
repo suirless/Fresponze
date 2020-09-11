@@ -333,9 +333,7 @@ int main()
 	IAudioEndpoint* pAudioEndpoint = nullptr;
 	EndpointInformation* pEndpointInfo = nullptr;
     CAlsaAudioEnumerator enums;
-    enums.EnumerateDevices();
-	enums.GetOutputDeviceList(pEndpointInfo);
-	enums.GetDeviceByUUID(RenderType, pEndpointInfo[0].EndpointUUID, pAudioEndpoint);
+	enums.GetDefaultDevice(RenderType, pAudioEndpoint);
 
 #ifdef WINDOWS_PLATFORM
 	// Main loop

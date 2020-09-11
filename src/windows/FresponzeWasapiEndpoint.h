@@ -79,6 +79,7 @@ public:
 
 	void GetDevicePointer(void*& pDevice) override;
 	void ThreadProc();
+    void GetDeviceFormat(PcmFormat& pcmFormat) override { pcmFormat = EndpointInfo.EndpointFormat; }
 	void SetDeviceInfo(EndpointInformation& DeviceInfo) override;
 	void GetDeviceInfo(EndpointInformation& DeviceInfo) override;
 	void SetCallback(IAudioCallback* pCallback) override;
