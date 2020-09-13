@@ -13,13 +13,12 @@ will compile and run on Windows, macOS and Linux.
 * [Opus](https://github.com/xiph/opus)
 * [Opusfile](https://github.com/xiph/opusfile)
 * [OGG](https://github.com/xiph/ogg)
-* [libnx](https://github.com/switchbrew/libnx)
 * [ImGui (for examples)](https://github.com/ocornut/imgui)
 
 # Audio backends
 * WASAPI (100%, finished)
 * XAudio2 (10%, in development)
-* ALSA (5%, in development)
+* ALSA (10%, in development)
 * AAudio (0%, in development)
 * AVAudioEngine (0%, in development)
 * CoreAudio (0%, in development)
