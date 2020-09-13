@@ -17,6 +17,7 @@
 *****************************************************************/
 #pragma once
 #include "FresponzeMediaResource.h"
+#ifdef FRESPONZE_USE_OPUS
 #include "opusfile.h"
 
 class COpusMediaResource : public IMediaResource
@@ -53,3 +54,5 @@ public:
 	fr_i64 SetPosition(fr_i64 FramePosition) override;
 	fr_i64 GetPosition() override;
 };
+
+#endif

@@ -38,7 +38,7 @@ extern "C"
 enum MixerType
 {
 	eMixerNoneType,
-	eMixerGameType,
+	eMixerGameType,				// deprecated, use advanced mixer
 	eMixerAdvancedType,
 	eMixerCustomType
 };

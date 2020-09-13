@@ -115,7 +115,9 @@ void*
 GetFormatListener(char* pListenerOpenLink)
 {
 	if (!strcmp(GetFilePathFormat(pListenerOpenLink), ".wav")) return new CRIFFMediaResource();
+#ifdef FRESPONZE_USE_OPUS
 	if (!strcmp(GetFilePathFormat(pListenerOpenLink), ".opus")) return new COpusMediaResource();
+#endif
 	return nullptr;
 } 
 

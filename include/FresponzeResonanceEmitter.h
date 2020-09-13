@@ -18,6 +18,7 @@
 *****************************************************************/
 #include "FresponzeEmitter.h"
 
+#ifdef FRESPONZE_USE_RESONANCE_API
 namespace vraudio {
     class ResonanceAudioApi;
     typedef int SourceId;
@@ -100,5 +101,6 @@ public:
 
     bool Process(fr_f32** ppData, fr_i32 Frames) override;
 };
+#endif
 
 IBaseEmitter* GetResonanceEmitter();

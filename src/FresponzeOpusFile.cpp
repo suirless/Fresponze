@@ -17,6 +17,7 @@
 *****************************************************************/
 #include "FresponzeOpusFile.h"
 
+#ifdef FRESPONZE_USE_OPUS
 #define OPUS_BUFFER 11520		// 120 ms on 48000Hz
 
 COpusMediaResource::COpusMediaResource(IFreponzeMapFile* pNewMapper)
@@ -249,3 +250,4 @@ COpusMediaResource::GetPosition()
 {
 	return FSeek;	//#TODO:
 }
+#endif

@@ -34,6 +34,7 @@ set(UPDATE_RESONANCE_AUDIO_DEPS_DIR "${RESONANCE_AUDIO_DIR}/third_party")
 set(BUILD_SHARED_LIBS ON)
 
 # Please, use vcpkg library for Windows builds (MSVC recommended)
+option(BUILD_OPUSFILE_API "Build opusfile API." ON)
 option(BUILD_RESONANCE_AUDIO_API "Build Resonance Audio API." ON)
 option(BUILD_FRESPONZE_STATIC "Build Fresponze in static mode." OFF)
 option(BUILD_EXAMPLES "Build examples for Fresponze library." ON)
@@ -46,8 +47,10 @@ else()
 endif()
 
 if (USE_VCPKG)
-    find_package(Ogg CONFIG REQUIRED)
-    find_package(Opus CONFIG REQUIRED)
+    if (BUILD_OPUSFILE_API)
+        find_package(Ogg CONFIG REQUIRED)
+        find_package(Opus CONFIG REQUIRED)
+    endif()
 else()
     if (UNIX AND NOT APPLE)
         find_package(OpenGL REQUIRED)
@@ -73,30 +76,32 @@ else()
         add_subdirectory(${GLFW_DIR})
     endif()
 
-    git_clone(
-            PROJECT_NAME    opus
-            GIT_URL         https://github.com/xiph/opus.git
-            GIT_BRANCH      master
-            DIRECTORY       ${OPUSFILE_DIR}
-    )
+    if (BUILD_OPUSFILE_API)
+        git_clone(
+                PROJECT_NAME    opus
+                GIT_URL         https://github.com/xiph/opus.git
+                GIT_BRANCH      master
+                DIRECTORY       ${OPUSFILE_DIR}
+        )
 
-    git_clone(
-            PROJECT_NAME    ogg
-            GIT_URL         https://github.com/xiph/ogg.git
-            GIT_BRANCH      master
-            DIRECTORY       ${OPUSFILE_DIR}
-    )
+        git_clone(
+                PROJECT_NAME    ogg
+                GIT_URL         https://github.com/xiph/ogg.git
+                GIT_BRANCH      master
+                DIRECTORY       ${OPUSFILE_DIR}
+        )
 
-    git_clone(
-            PROJECT_NAME    opusfile
-            GIT_URL         https://github.com/xiph/opusfile.git
-            GIT_BRANCH      master
-            DIRECTORY       ${OPUSFILE_DIR}
-    )
+        git_clone(
+                PROJECT_NAME    opusfile
+                GIT_URL         https://github.com/xiph/opusfile.git
+                GIT_BRANCH      master
+                DIRECTORY       ${OPUSFILE_DIR}
+        )
 
-    set(OPUS_INCLUDE_DIR ${OPUSFILE_DIR}/opus/include)
-    set(OGG_INCLUDE_DIR ${OPUSFILE_DIR}/ogg/include)
-    add_subdirectory(${OPUSFILE_DIR})
+        set(OPUS_INCLUDE_DIR ${OPUSFILE_DIR}/opus/include)
+        set(OGG_INCLUDE_DIR ${OPUSFILE_DIR}/ogg/include)
+        add_subdirectory(${OPUSFILE_DIR})
+    endif()
 endif()
 
 if (WIN32)
@@ -136,49 +141,52 @@ elseif (UNIX AND NOT APPLE)
     )
 endif() 
 
-download_project(
-        PROJ           resonance-audio
-        GIT_REPOSITORY https://github.com/resonance-audio/resonance-audio.git
-        GIT_TAG        master
-        SOURCE_DIR     ${RESONANCE_AUDIO_DIR}
-        UPDATE_DISCONNECTED 1
-)
+if (BUILD_RESONANCE_AUDIO_API)
+    download_project(
+            PROJ           resonance-audio
+            GIT_REPOSITORY https://github.com/resonance-audio/resonance-audio.git
+            GIT_TAG        master
+            SOURCE_DIR     ${RESONANCE_AUDIO_DIR}
+            UPDATE_DISCONNECTED 1
+    )
 
-# Provide custom repository with CMakeLists.txt to make this library
-# without any problems
-download_project(
-        PROJ           r8brain
-        GIT_REPOSITORY https://github.com/Vertver/r8brain-free-src.git
-        GIT_TAG        master
-        SOURCE_DIR     ${R8BRAIN_DIR}
-        UPDATE_DISCONNECTED 1
-)
+    # Provide custom repository with CMakeLists.txt to make this library
+    # without any problems
+    download_project(
+            PROJ           r8brain
+            GIT_REPOSITORY https://github.com/Vertver/r8brain-free-src.git
+            GIT_TAG        master
+            SOURCE_DIR     ${R8BRAIN_DIR}
+            UPDATE_DISCONNECTED 1
+    )
 
-# Resonance Audio library require use Shell script to clone core
-# libraies. We don't want to do it manually, and that's reason why
-# we are cloning repos by yourself
-git_clone(
-        PROJECT_NAME    eigen
-        GIT_URL         https://github.com/suirless/libeigen.git
-        GIT_BRANCH      master
-        DIRECTORY       ${UPDATE_RESONANCE_AUDIO_DEPS_DIR}
-)
+    # Resonance Audio library require use Shell script to clone core
+    # libraies. We don't want to do it manually, and that's reason why
+    # we are cloning repos by yourself
+    git_clone(
+            PROJECT_NAME    eigen
+            GIT_URL         https://github.com/suirless/libeigen.git
+            GIT_BRANCH      master
+            DIRECTORY       ${UPDATE_RESONANCE_AUDIO_DEPS_DIR}
+    )
 
-git_clone(
-        PROJECT_NAME    pffft
-        GIT_URL         https://bitbucket.org/jpommier/pffft.git
-        GIT_BRANCH      master
-        DIRECTORY       ${UPDATE_RESONANCE_AUDIO_DEPS_DIR}
-)
+    git_clone(
+            PROJECT_NAME    pffft
+            GIT_URL         https://bitbucket.org/jpommier/pffft.git
+            GIT_BRANCH      master
+            DIRECTORY       ${UPDATE_RESONANCE_AUDIO_DEPS_DIR}
+    )
 
-git_clone(
-        PROJECT_NAME    googletest
-        GIT_URL         https://github.com/google/googletest.git
-        GIT_BRANCH      master
-        DIRECTORY       ${UPDATE_RESONANCE_AUDIO_DEPS_DIR}
-)
+    git_clone(
+            PROJECT_NAME    googletest
+            GIT_URL         https://github.com/google/googletest.git
+            GIT_BRANCH      master
+            DIRECTORY       ${UPDATE_RESONANCE_AUDIO_DEPS_DIR}
+    )
 
-add_subdirectory(${RESONANCE_AUDIO_DIR})
+    add_subdirectory(${RESONANCE_AUDIO_DIR})
+endif()
+
 add_subdirectory(${R8BRAIN_DIR})
 
 
@@ -206,19 +214,41 @@ elseif (UNIX AND NOT APPLE)
     target_compile_definitions(${FRESPONZE_LIBRARY_NAME} PUBLIC LINUX_PLATFORM)
 endif() 
 
+if (BUILD_RESONANCE_AUDIO_API)
+    target_compile_definitions(${FRESPONZE_LIBRARY_NAME} PUBLIC FRESPONZE_USE_RESONANCE_API)
+endif()
+
+if (BUILD_OPUSFILE_API)
+    target_compile_definitions(${FRESPONZE_LIBRARY_NAME} PUBLIC FRESPONZE_USE_OPUS)
+endif()
+
 target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/r8brain-free-src)
 target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/resonance-audio/resonance_audio/api)
 target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OPUS_INCLUDE_DIR})
 target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OGG_INCLUDE_DIR})
 
-if (WIN32)
-    if (USE_VCPKG)
-        target_link_libraries(${FRESPONZE_LIBRARY_NAME} Opus::opus Ogg::ogg ResonanceAudioStatic ${OPUSFILE_LIBRARY} r8brain)
-    else()
-        target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain)
+if (BUILD_RESONANCE_AUDIO_API)
+    if (WIN32)
+        if (USE_VCPKG)
+            target_link_libraries(${FRESPONZE_LIBRARY_NAME} Opus::opus Ogg::ogg ResonanceAudioStatic ${OPUSFILE_LIBRARY} r8brain)
+        else()
+            target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain)
+        endif()
+    elseif (UNIX AND NOT APPLE)
+        target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain pthread ${ALSA_LIBRARIES})
     endif()
-elseif (UNIX AND NOT APPLE)
-    target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain pthread ${ALSA_LIBRARIES})
+else()
+    if (WIN32)
+        if (USE_VCPKG)
+            target_link_libraries(${FRESPONZE_LIBRARY_NAME} Opus::opus Ogg::ogg ${OPUSFILE_LIBRARY} r8brain)
+        else()
+            target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile r8brain)
+        endif()
+    elseif (UNIX AND NOT APPLE)
+        target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile r8brain pthread ${ALSA_LIBRARIES})
+    else()
+        target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile r8brain pthread)
+    endif()
 endif()
 
 if (BUILD_EXAMPLES)

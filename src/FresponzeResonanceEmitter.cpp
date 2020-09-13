@@ -17,6 +17,7 @@
 * limitations under the License.
 *****************************************************************/
 #include "FresponzeResonanceEmitter.h"
+#ifdef FRESPONZE_USE_RESONANCE_API
 #include "resonance_audio_api.h"
 #include "binaural_surround_renderer.h"
 
@@ -315,3 +316,10 @@ CResonanceEmitter::Process(fr_f32** ppData, fr_i32 Frames)
     SetPosition(BaseEmitterPosition);
     return true;
 }
+#else
+IBaseEmitter*
+GetResonanceEmitter()
+{
+    return nullptr;
+}
+#endif
