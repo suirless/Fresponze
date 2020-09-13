@@ -20,7 +20,6 @@
 #include "FresponzeWavFile.h"
 #include "FresponzeListener.h"
 #include "FresponzeMixer.h"
-#include "FresponzeAlsaEnumerator.h"
 #include "FresponzeMasterEmitter.h"
 
 IFresponze* pFresponze = nullptr;
@@ -38,6 +37,7 @@ IFresponze* pFresponze = nullptr;
 #include <dinput.h>
 #include <tchar.h>
 #elif defined(LINUX_PLATFORM)
+#include "FresponzeAlsaEnumerator.h"
 #include <stdio.h>
 #include "imgui_impl_opengl3.h"
 
@@ -329,11 +329,12 @@ int main()
 	if constexpr ((SUPPORTED_HOSTS & eWindowsCoreHost)) {
 		pFresponze->GetHardwareInterface(eEndpointWASAPIType, pAudioCallback, (void**)&pAudioHardware);
 	}
+	else if constexpr ((SUPPORTED_HOSTS & eLinuxPlatform)) {
+		pFresponze->GetHardwareInterface(eEndpointAlsaType, pAudioCallback, (void**)&pAudioHardware);
+	}
 
 	IAudioEndpoint* pAudioEndpoint = nullptr;
 	EndpointInformation* pEndpointInfo = nullptr;
-    CAlsaAudioEnumerator enums;
-	enums.GetDefaultDevice(RenderType, pAudioEndpoint);
 
 #ifdef WINDOWS_PLATFORM
 	// Main loop
@@ -378,6 +379,7 @@ int main()
     glfwTerminate();
 #endif
 
+	FrDestroyInstance(pFresponze);
 	return 0;
 }
 

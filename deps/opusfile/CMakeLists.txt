@@ -17,7 +17,6 @@ set(OPUSFILE_LIBS
   ${OPUSFILE_LIBS}
   ogg
   opus
-  m
 )
 
 set(OPUSFILE_INCLUDE_DIR

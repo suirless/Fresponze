@@ -34,7 +34,6 @@
 
 FRDEFINE_IID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, 00000003, 0000, 0010, 80, 00, 00, aa, 00, 38, 9b, 71);
 FRDEFINE_IID(KSDATAFORMAT_SUBTYPE_PCM, 00000001, 0000, 0010, 80, 00, 00, aa, 00, 38, 9b, 71);
-#define maxmin(a, minimum, maximum)  min(max(a, minimum), maximum)
 
 PROPERTYKEY FRPKEY_Device_FriendlyName = { { 0xa45c254e, 0xdf1c, 0x4efd, { 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0 } }, 14 };
 
@@ -72,7 +71,7 @@ CopyDataToBuffer(
 		switch (Bits) {
 		case 16:
 			for (size_t i = 0; i < sizeToRead; i++) {
-				pShortData[i] = maxmin(((short)(FileData[i] * 32768.0f)), -32768, 32767);
+				pShortData[i] = maxmin(((int)(FileData[i] * 32768.0f)), -32768, 32767);
 			}
 			break;
 		default:

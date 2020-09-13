@@ -283,6 +283,8 @@ int main(int, char**)
 	UnregisterClass(wc.lpszClassName, wc.hInstance);
 #endif
 
+	FrDestroyInstance(pFresponze);
+
 	return 0;
 }
 

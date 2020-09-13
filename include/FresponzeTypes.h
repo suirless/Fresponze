@@ -27,6 +27,14 @@
 
 #define MAX_CHANNELS 8
 
+
+#ifdef WINDOWS_PLATFORM
+#undef max
+#undef min
+#include <algorithm>
+#define maxmin(a, minimum, maximum) std::min(std::max(a, minimum), maximum)
+#endif
+
 inline
 float
 dbtol(float Decibels)
@@ -1341,8 +1349,6 @@ riff_to_pcm(
 	format->Frames = header->data_bytes / (format->Bits / 8) / header->num_channels;
 	format->SampleRate = header->sample_rate;
 }
-
-#define maxmin(a, minimum, maximum)  std::min(std::max(a, minimum), maximum)
 
 inline
 fr_f32

@@ -47,7 +47,8 @@ enum EndpointType
 {
 	eEndpointNoneType,
 	eEndpointWASAPIType,
-	eEndpointXAudio2Type
+	eEndpointXAudio2Type,
+	eEndpointAlsaType
 };
 
 struct FresponzeInformation

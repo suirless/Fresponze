@@ -36,10 +36,16 @@ set(BUILD_SHARED_LIBS ON)
 # Please, use vcpkg library for Windows builds (MSVC recommended)
 option(BUILD_RESONANCE_AUDIO_API "Build Resonance Audio API." ON)
 option(BUILD_FRESPONZE_STATIC "Build Fresponze in static mode." OFF)
-option(BUILD_STATIC "Build libraries in static mode." OFF)
 option(BUILD_EXAMPLES "Build examples for Fresponze library." ON)
+option(USE_VCPKG "Use vcpkg instead of source packages" OFF)
 
 if (WIN32)
+    option(BUILD_STATIC "Build libraries in static mode." ON)
+else()
+    option(BUILD_STATIC "Build libraries in static mode." OFF)
+endif()
+
+if (USE_VCPKG)
     find_package(Ogg CONFIG REQUIRED)
     find_package(Opus CONFIG REQUIRED)
 else()
@@ -55,6 +61,16 @@ else()
         if (ALSA_FOUND)
             include_directories(${ALSA_INCLUDE_DIRS})
         endif(ALSA_FOUND)
+
+        download_project(
+            PROJ           glfw
+            GIT_REPOSITORY https://github.com/glfw/glfw.git
+            GIT_TAG        master
+            SOURCE_DIR     ${GLFW_DIR}
+            UPDATE_DISCONNECTED 1
+        )
+
+        add_subdirectory(${GLFW_DIR})
     endif()
 
     git_clone(
@@ -78,17 +94,9 @@ else()
             DIRECTORY       ${OPUSFILE_DIR}
     )
 
+    set(OPUS_INCLUDE_DIR ${OPUSFILE_DIR}/opus/include)
+    set(OGG_INCLUDE_DIR ${OPUSFILE_DIR}/ogg/include)
     add_subdirectory(${OPUSFILE_DIR})
-
-    download_project(
-            PROJ           glfw
-            GIT_REPOSITORY https://github.com/glfw/glfw.git
-            GIT_TAG        master
-            SOURCE_DIR     ${GLFW_DIR}
-            UPDATE_DISCONNECTED 1
-    )
-
-    add_subdirectory(${GLFW_DIR})
 endif()
 
 if (WIN32)
@@ -99,7 +107,7 @@ endif()
 
 # vcpkg 'opusfile' package provide only header and .lib file,
 # so we must manually find this include and library
-if (WIN32)
+if (USE_VCPKG)
     find_path(OPUS_INCLUDE_DIR opus/opusfile.h)
     find_library(OPUSFILE_LIBRARY opusfile REQUIRED)
     message(STATUS "opusfile library: ${OPUSFILE_LIBRARY}")
@@ -151,7 +159,7 @@ download_project(
 # we are cloning repos by yourself
 git_clone(
         PROJECT_NAME    eigen
-        GIT_URL         https://gitlab.com/libeigen/eigen.git
+        GIT_URL         https://github.com/suirless/libeigen.git
         GIT_BRANCH      master
         DIRECTORY       ${UPDATE_RESONANCE_AUDIO_DEPS_DIR}
 )
@@ -204,7 +212,11 @@ target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OPUS_INCLUDE_DIR})
 target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OGG_INCLUDE_DIR})
 
 if (WIN32)
-    target_link_libraries(${FRESPONZE_LIBRARY_NAME} Opus::opus Ogg::ogg ResonanceAudioStatic ${OPUSFILE_LIBRARY} r8brain)
+    if (USE_VCPKG)
+        target_link_libraries(${FRESPONZE_LIBRARY_NAME} Opus::opus Ogg::ogg ResonanceAudioStatic ${OPUSFILE_LIBRARY} r8brain)
+    else()
+        target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain)
+    endif()
 elseif (UNIX AND NOT APPLE)
     target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain pthread ${ALSA_LIBRARIES})
 endif()
