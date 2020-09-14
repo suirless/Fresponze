@@ -14,6 +14,7 @@ will compile and run on Windows, macOS and Linux.
 * [Opusfile](https://github.com/xiph/opusfile)
 * [OGG](https://github.com/xiph/ogg)
 * [ImGui (for examples)](https://github.com/ocornut/imgui)
+* [Some code from WebRTC](https://chromium.googlesource.com/external/webrtc/)
 
 # Audio backends
 * WASAPI (100%, finished)
