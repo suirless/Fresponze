@@ -1,5 +1,6 @@
 /*********************************************************************
-* Copyright (C) Anton Kovalev (vertver), 2019. All rights reserved.
+* Copyright (C) Anton Kovalev (vertver), 2019-2020. All rights reserved.
+* Copyright (C) Suirless, 2020. All rights reserved.
 * Fresponze - fast, simple and modern multimedia sound library
 * Apache-2 License
 **********************************************************************
@@ -119,18 +120,6 @@ CWASAPIAudioEnpoint::GetDevicePointer(
 }
 
 void
-WINAPIV
-WASAPIThreadProc(
-	void* pData
-)
-{
-	CoInitialize(nullptr);
-	CWASAPIAudioEnpoint* pThis = (CWASAPIAudioEnpoint*)pData;
-	pThis->ThreadProc();
-	CoUninitialize();
-}
-
-void
 CWASAPIAudioEnpoint::ThreadProc()
 {	
 	/* This functions must be called in thread, where you create service */ 
@@ -182,8 +171,8 @@ CWASAPIAudioEnpoint::ThreadProc()
 	pStartEvent->Wait();
 	pThreadEvent->Reset();
 	if (pAudioCallback) {
-		pAudioCallback->FlushCallback();
 		pAudioCallback->FormatCallback(&fmtToPush);
+		pAudioCallback->FlushCallback();
 	}
 
 	// Flush WASAPI buffer 
@@ -240,6 +229,8 @@ CWASAPIAudioEnpoint::ThreadProc()
 
 					AvailableFrames = FramesInBuffer;
 					AvailableFrames -= StreamPadding;
+
+					/* Render audio if current stream is empty (perfomance optimisation) */
 					pAudioCallback->RenderCallback(FramesInBuffer, CurrentChannels, (fr_i32)SampleRate);
 				}
 			}
@@ -298,16 +289,32 @@ CWASAPIAudioEnpoint::CreateWasapiThread()
 	DWORD dwThreadId = 0;
 
 	if (pThreadEvent->IsRaised()) pThreadEvent->Reset();
+
 #ifndef XBOX_BUILD
-	hThread = (HANDLE)_beginthread(WASAPIThreadProc, 0, this);
+	static auto ThreadFunc = [](void* pData) {
+		CoInitialize(nullptr);
+		CWASAPIAudioEnpoint* pThis = (CWASAPIAudioEnpoint*)pData;
+		pThis->ThreadProc();
+		CoUninitialize();
+	};
+
+	hThread = (HANDLE)_beginthread((_beginthread_proc_type)ThreadFunc, 0, this);
 #else
-	hThread = CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)WASAPIThreadProc, this, 0, &dwThreadId);
+	static auto ThreadFunc = [](void* pData) -> DWORD {
+		CoInitialize(nullptr);
+		CWASAPIAudioEnpoint* pThis = (CWASAPIAudioEnpoint*)pData;
+		pThis->ThreadProc();
+		CoUninitialize();
+		return 0;
+	};
+
+	hThread = CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)ThreadFunc, this, 0, &dwThreadId);
 #endif
 
 	if (!IsInvalidHandle(hThread)) {
 		TypeToLog("WASAPI: Waiting for event");
 		if (!pSyncEvent->Wait(2000)) {
-			/* Terminate our thread if it was timeouted */
+			/* Terminate our thread if it was timeouted or deadlocked */
 			if (WaitForSingleObject(hThread, 0) != WAIT_OBJECT_0) {
 				TypeToLog("WASAPI: Failed to init thread");
 				TerminateThread(hThread, (DWORD)-1);
@@ -344,11 +351,11 @@ bool
 CWASAPIAudioEnpoint::GetEndpointDeviceInfo()
 {
 	LPWSTR lpwDeviceId = nullptr;
+#ifndef XBOX_BUILD
 	IPropertyStore* pPropertyStore = nullptr;
 	PROPVARIANT value = { 0 };
 
 	if (!pCurrentDevice) return false;
-#ifndef XBOX_BUILD
 	if (FAILED(pCurrentDevice->OpenPropertyStore(STGM_READ, &pPropertyStore))) {
 		TypeToLog("WASAPI: pCurrentDevice->OpenPropertyStore() failed (endpoint)");
 		return false;
@@ -401,20 +408,34 @@ CWASAPIAudioEnpoint::GetEndpointDeviceInfo()
 	return true;
 }
 
+
 bool
 CWASAPIAudioEnpoint::InitializeToPlay(fr_f32 Delay)
 {
+#ifndef XBOX_BUILD
+	constexpr AUDCLNT_SHAREMODE ClientMode = AUDCLNT_SHAREMODE_SHARED;
+#else
+	constexpr AUDCLNT_SHAREMODE ClientMode = AUDCLNT_SHAREMODE_EXCLUSIVE;
+#endif
+
 	DWORD dwStreamFlags = (AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY);
 	UINT32 BufferFrames = 0;
 	HRESULT hr = 0;
 	REFERENCE_TIME refTimeDefault = 0;
 	REFERENCE_TIME refTimeMin = 0;
-	REFERENCE_TIME refTimeAccepted = REFERENCE_TIME(Delay * 10000.f);
+	REFERENCE_TIME refTimeAccepted = REFERENCE_TIME(((fr_f64)Delay * 10000.));
 	WAVEFORMATEX* pWaveFormat = nullptr;
 
-	if (!InitializeClient(pCurrentDevice)) { TypeToLog("WASAPI: Can't initialize audio client"); return false; }
+	if (!InitializeClient(pCurrentDevice)) { 
+		TypeToLog("WASAPI: Can't initialize audio client"); 
+		return false;
+	}
+
 	if (!GetEndpointDeviceInfo()) return false;
-	if (FAILED(pAudioClient->GetMixFormat(&pWaveFormat))) { TypeToLog("WASAPI: Can't get mix format"); return false; }
+	if (FAILED(pAudioClient->GetMixFormat(&pWaveFormat))) {
+		TypeToLog("WASAPI: Can't get mix format");
+		return false;
+	}
 
 	/* Set local format struct */
 	EndpointInfo.EndpointFormat.IsFloat = pWaveFormat->wFormatTag == 3;
@@ -431,6 +452,23 @@ CWASAPIAudioEnpoint::InitializeToPlay(fr_f32 Delay)
 		EndpointInfo.EndpointFormat.IsFloat = pTmp->SubFormat == FR_IID_KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
 	}
 
+#ifdef XBOX_BUILD
+	/* Required by GDK WASAPI on Xbox platform */
+	fr_i32 ChannelsArray[] = { 8, 6, 4, 2, 1 };
+	WAVEFORMATEX tempFormat = {};
+	WAVEFORMATEX* closestTempFormat = {};
+	PcmFormatToWaveFormatEx(EndpointInfo.EndpointFormat, tempFormat);
+	for (fr_i32 valChannels : ChannelsArray) {
+		if (valChannels <= EndpointInfo.EndpointFormat.Channels) break;
+		tempFormat.nChannels = valChannels;
+		hr = pAudioClient->IsFormatSupported(ClientMode, &tempFormat, &closestTempFormat);
+		if (SUCCEEDED(hr)) {
+			pWaveFormat->nChannels = valChannels;
+			break;
+		}
+	}
+#endif
+
 	/* Verify fail because this method can be failed on AC97 codecs. */
 	if (FAILED(pAudioClient->GetDevicePeriod(&refTimeDefault, &refTimeMin))) {
 		refTimeDefault = 1000000;
@@ -442,20 +480,23 @@ CWASAPIAudioEnpoint::InitializeToPlay(fr_f32 Delay)
 	}
 
 	/* Try to initialize with custom delay time */
-	hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, dwStreamFlags, refTimeAccepted, 0, pWaveFormat, nullptr);
+	hr = pAudioClient->Initialize(ClientMode, dwStreamFlags, refTimeAccepted, 0, pWaveFormat, nullptr);
 	if (FAILED(hr)) {
-		hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeAccepted, 0, pWaveFormat, nullptr);
+		hr = pAudioClient->Initialize(ClientMode, 0, refTimeAccepted, 0, pWaveFormat, nullptr);
 		if (FAILED(hr)) {
 			/* The delay time can be unaligned, so we use default device time */
 			if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED) {
-				hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, dwStreamFlags, refTimeDefault, 0, pWaveFormat, nullptr);
+				hr = pAudioClient->Initialize(ClientMode, dwStreamFlags, refTimeDefault, 0, pWaveFormat, nullptr);
 				if (FAILED(hr)) {
-					hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, pWaveFormat, nullptr);
+					hr = pAudioClient->Initialize(ClientMode, 0, refTimeDefault, 0, pWaveFormat, nullptr);
 					if (FAILED(hr)) {
 						CoTaskMemFree(pWaveFormat);
 						return false;
 					}
 				}
+			} else {
+				CoTaskMemFree(pWaveFormat);
+				return false;
 			}
 		}
 	}
@@ -495,15 +536,13 @@ bool
 CWASAPIAudioEnpoint::Open(fr_f32 Delay)
 {
 	DelayCustom = Delay;
-	if (!Start()) return false;
-	return true;
+	return Start();
 }
 
 bool
 CWASAPIAudioEnpoint::Close()
 {
-	Stop();
-	return true;
+	return Stop();
 }
 
 bool 

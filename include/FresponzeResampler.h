@@ -30,10 +30,6 @@ public:
 	virtual void ResampleDouble(fr_i32 frames, fr_f64** inputData, fr_f64** outputData) = 0;
 };
 
-#ifdef USE_LIBSOXR_RESAMPLER
-
-#endif
-
 class CR8BrainResampler : public IBaseResampler
 {
 private:

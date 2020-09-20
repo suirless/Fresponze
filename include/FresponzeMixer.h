@@ -22,20 +22,6 @@
 
 class IAudioMixer : public IBaseInterface
 {
-protected:
-	fr_i32 BufferPosition = 0;
-	fr_i32 CurrentBuffer = 0;
-	SoundState InputState = NoneState;
-	EffectNodeStruct* pInputFirstEffect = nullptr;
-	EffectNodeStruct* pMasterFirstEffect = nullptr;
-	IAudioCallback* pAudioCallback = nullptr;
-	C2DFloatBuffer mixBuffer = {};
-	C2DFloatBuffer tempBuffer = {};
-	CFloatBuffer OutputBuffer = {};
-	CRingFloatBuffer RingBuffer = {};
-	PcmFormat MixFormat = {};
-	PcmFormat InputFormat = {};
-
 public:
 	virtual bool SetMixFormat(PcmFormat& NewFormat) = 0;
 	virtual bool GetMixFormat(PcmFormat& ThisFormat) = 0;
@@ -57,9 +43,7 @@ protected:
 public:
 	CMixerAudioCallback(IAudioMixer* pParentMixer)
 	{
-#ifdef WINDOWS_PLATFORM
-		_InterlockedIncrement(&Counter);
-#endif
+		AddRef();
 		pAudioMixer = pParentMixer;
 	}
 
@@ -97,6 +81,20 @@ public:
 
 class IAdvancedMixer : public IAudioMixer
 {
+protected:
+	fr_i32 BufferPosition = 0;
+	fr_i32 CurrentBuffer = 0;
+	SoundState InputState = NoneState;
+	EffectNodeStruct* pInputFirstEffect = nullptr;
+	EffectNodeStruct* pMasterFirstEffect = nullptr;
+	IAudioCallback* pAudioCallback = nullptr;
+	C2DFloatBuffer mixBuffer = {};
+	C2DFloatBuffer tempBuffer = {};
+	CFloatBuffer OutputBuffer = {};
+	CRingFloatBuffer RingBuffer = {};
+	PcmFormat MixFormat = {};
+	PcmFormat InputFormat = {};
+
 public:
 	virtual void SetBufferSamples(fr_i32 SamplesIn) = 0;
 

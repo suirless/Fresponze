@@ -33,8 +33,6 @@
 #define FRDEFINE_IID(interfaceName, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
     __FRDEFINE_IID(FRE_IID_##interfaceName, 0x##l, 0x##w1, 0x##w2, 0x##b1, 0x##b2, 0x##b3, 0x##b4, 0x##b5, 0x##b6, 0x##b7, 0x##b8)
 
-#define maxmin(a, minimum, maximum)  min(max(a, minimum), maximum)
-
 inline
 bool 
 GetDeviceInformation(IMMDevice* pDevicePtr, PcmFormat& fmt)
@@ -89,8 +87,9 @@ public:
 			pMasteringVoice = pTempMasteringVoice;
 			pXAudio2->AddRef();
 			SetDeviceInfo(Info);
-			_InterlockedIncrement(&Counter);
 		}
+
+		AddRef();
 	}
 
 	~CXAudio2AudioEndpoint()
@@ -101,7 +100,7 @@ public:
 		_RELEASE(pXAudio2);
 	}
 
-	void GetDevicePointer(void*& pDevice) override;
+	void GetDevicePointer(void*& pDevice) override { pDevice = pMasteringVoice; }
 	void ThreadProc();
 	void GetDeviceFormat(PcmFormat& PcmFormat) override {}
 	void SetDeviceInfo(EndpointInformation& DeviceInfo) override;

@@ -118,18 +118,19 @@ void DrawImGui()
 			fr_i32 samples = OutputLists[current_item].EndpointFormat.SampleRate * (items_delay[current_delay] / 1000.f);
 			OutputLists[current_item].EndpointFormat.Frames = samples;
 			if (pAudioHardware->Open(RenderType, items_delay[current_delay], OutputLists[current_item].EndpointUUID)) {
+				/* Must exist, because mixer after restarting doesn't know about new format */
 				pAdvancedMixer->SetBufferSamples(samples);
+				pAdvancedMixer->SetMixFormat(OutputLists[current_item].EndpointFormat);
 				
 				/* Just update emitter and set listener */
-				if (pAdvancedMixer->CreateListener((void*)"X:\\test.opus", listNode, OutputLists[current_item].EndpointFormat)) {
+				if (pAdvancedMixer->CreateListener((void*)"X:\\test.wav", listNode, OutputLists[current_item].EndpointFormat)) {
 					pAdvancedMixer->AddEmitterToListener(listNode, pBaseEmitter);
 					pBaseEmitter->SetState(eReplayState);
+
+					is_already_runned = true;
+				} else {
+					pAudioHardware->Close();
 				}
-
-				/* Must exist, because mixer after restarting doesn't know about new format */
-				pAdvancedMixer->SetMixFormat(OutputLists[current_item].EndpointFormat);
-
-				is_already_runned = true;
 			}
 		}
 
@@ -243,13 +244,14 @@ int main(int, char**)
 	/* Create our system dependent hardware */
 	if constexpr ((SUPPORTED_HOSTS & eWindowsCoreHost)) {
 		pFresponze->GetHardwareInterface(eEndpointWASAPIType, pAudioCallback, (void**)&pAudioHardware);
+	} else if constexpr ((SUPPORTED_HOSTS & eALSAHost)) {
+		pFresponze->GetHardwareInterface(eEndpointAlsaType, pAudioCallback, (void**)&pAudioHardware);
 	}
 
 	/* Enumerate internal list of audio devices */
 	if (!pAudioHardware->Enumerate()) {
 		return -1;
 	}
-
 
 	/* Get all device count and list to process it to GUI */
 	pAudioHardware->GetDevicesList(InputLists, OutputLists);

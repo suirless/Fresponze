@@ -179,22 +179,9 @@ COpusMediaResource::Read(fr_i64 FramesCount, fr_f32** ppFloatData)
 
 	LinearToPlanar(transferBuffers.GetBuffers(), tempBuffer.Data(), frame_out * formatOfFile.Channels, formatOfFile.Channels);
 
-	/*	#############################################
-		OPT 002: Perfomance issue with resampler
-		Priority: High
-
-		In this issue, we process file by resampler every time for every file.
-		The mixer can process and mix data in one sample rate, and we resample
-		data only on output.
-
-		Current state: processing
-		#############################################
-	*/
-	//BEGIN_TEST
 	if (outputFormat.SampleRate != formatOfFile.SampleRate) {
 		resampler->Resample((fr_i32)frame_out, transferBuffers.GetBuffers(), transferBuffers.GetBuffers());
 	}
-	//END_TEST
 
 	/* if mono - set middle channels mode for stereo */
 	if (formatOfFile.Channels == 1 && outputFormat.Channels >= 2) {

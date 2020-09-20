@@ -146,7 +146,6 @@ FastMemTryRealloc(
 	return temp_ptr;
 }
 
-
 typedef struct
 {
 	fr_i32 top;
@@ -154,7 +153,7 @@ typedef struct
 	fr_i32 bottom;
 	fr_i32 right;
 } SRect;
-
+ 
 typedef struct
 {
 	fr_f32 x, y;
@@ -1509,16 +1508,17 @@ void* GetMapFileSystem();
 #define BugAssert(xx, yy) DebugAssert(!!(xx), yy)
 #define BugAssert1(xx) DebugAssert(!!(xx), nullptr)
 #else
-
+#define BugAssert(xx, yy) (xx)
+#define BugAssert1(xx) (xx)
 #endif
 
 #ifndef DISABLE_PERFOMANCE_DEBUG
 fr_i64 DebugStamp(); 
-#define BEGIN_TEST \
+#define FRESPONZE_BEGIN_TEST \
 	{ \
 	fr_i64 DebugCounterTick = DebugStamp(); 
 	
-#define END_TEST \
+#define FRESPONZE_END_TEST \
 	DebugCounterTick = DebugStamp() - DebugCounterTick;	\
 		TypeToLog(DebugCounterTick); \
 	}

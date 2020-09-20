@@ -328,8 +328,7 @@ int main()
 	/* Create our system dependent hardware */
 	if constexpr ((SUPPORTED_HOSTS & eWindowsCoreHost)) {
 		pFresponze->GetHardwareInterface(eEndpointWASAPIType, pAudioCallback, (void**)&pAudioHardware);
-	}
-	else if constexpr ((SUPPORTED_HOSTS & eLinuxPlatform)) {
+	} else if constexpr ((SUPPORTED_HOSTS & eALSAHost)) {
 		pFresponze->GetHardwareInterface(eEndpointAlsaType, pAudioCallback, (void**)&pAudioHardware);
 	}
 

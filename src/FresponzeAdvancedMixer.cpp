@@ -231,6 +231,7 @@ CAdvancedMixer::Render(fr_i32 Frames, fr_i32 Channels, fr_i32 SampleRate)
 	ListenersNode* pListNode = pFirstListener;
 	PcmFormat fmt = { };
 
+	FRESPONZE_BEGIN_TEST
 	if (!pFirstListener) return false;
 	/* Update buffer size if output endpoint change sample rate/bitrate/*/
 	if (RingBuffer.GetLeftBuffers()) return false;
@@ -240,17 +241,6 @@ CAdvancedMixer::Render(fr_i32 Frames, fr_i32 Channels, fr_i32 SampleRate)
 	tempBuffer.Resize(Channels, Frames);
 	mixBuffer.Resize(Channels, Frames);
 
-	/*	#############################################	
-		OPT 001: Optimization issue with 'for' cycle.
-		Priority: Medium
-
-		We can process the signal only once, rather than every cycle time.
-		This can increase perfomance by 10-70%, because in this case
-		we don't seek the file pointer.
-
-		Current state: processing
-		############################################# 
-	*/
 	for (size_t i = 0; i < RING_BUFFERS_COUNT; i++) {
 		tempBuffer.Clear();
 		mixBuffer.Clear();
@@ -278,6 +268,7 @@ CAdvancedMixer::Render(fr_i32 Frames, fr_i32 Channels, fr_i32 SampleRate)
 		RingBuffer.PushBuffer(OutputBuffer.Data(), Frames * Channels);
 		RingBuffer.NextBuffer();
 	}
+	FRESPONZE_END_TEST
 
 	return true;
 }
