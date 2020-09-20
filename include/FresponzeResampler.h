@@ -91,8 +91,8 @@ public:
 		CalculateFrames(frames, inSRate, outSRate, convertedFrames);
 		if (frames > bufLength) Reset(frames, inSRate, outSRate, channels, lin);
 
-		doubleBuffers[0].Resize(channels, frames);
-		doubleBuffers[1].Resize(channels, frames);
+		doubleBuffers[0].ResizeOverride(channels, frames);
+		doubleBuffers[1].ResizeOverride(channels, convertedFrames);
 		FloatToDouble(inputData, doubleBuffers[0].GetBuffers(), channels, frames);
 		for (size_t i = 0; i < channels; i++) {
 			resampler[i]->process(doubleBuffers[0][i], frames, doubleBuffers[1][i]);

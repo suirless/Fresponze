@@ -27,13 +27,13 @@
 
 #define MAX_CHANNELS 8
 
-
 #ifdef WINDOWS_PLATFORM
 #undef max
 #undef min
-#include <algorithm>
-#define maxmin(a, minimum, maximum) std::min(std::max(a, minimum), maximum)
 #endif
+
+#include <algorithm>
+#define maxmin(a, minimum, maximum) std::clamp(a, minimum, maximum) //std::min(std::max(a, minimum), maximum)
 
 inline
 float
@@ -446,6 +446,17 @@ public:
 		if (NewBuffersCount > BuffersCount) SetBuffersCount(NewBuffersCount);
 		if (SizeToResize > DataSize) {
 			for (size_t i = 0; i < BuffersCount; i++) { 
+				pDoublePointer[i] = (TYPE*)FastMemTryRealloc(pDoublePointer[i], SizeToResize * sizeof(TYPE), DataSize * sizeof(TYPE));
+			}
+			DataSize = SizeToResize;
+		}
+	}
+
+	void ResizeOverride(fr_i32 NewBuffersCount, fr_i32 SizeToResize)
+	{
+		if (NewBuffersCount > BuffersCount) SetBuffersCount(NewBuffersCount);
+		if (SizeToResize != DataSize) {
+			for (size_t i = 0; i < BuffersCount; i++) {
 				pDoublePointer[i] = (TYPE*)FastMemTryRealloc(pDoublePointer[i], SizeToResize * sizeof(TYPE), DataSize * sizeof(TYPE));
 			}
 			DataSize = SizeToResize;

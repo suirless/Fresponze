@@ -61,7 +61,7 @@ CAdvancedMixer::SetNewFormat(PcmFormat fmt)
 bool
 CAdvancedMixer::SetMixFormat(PcmFormat& NewFormat)
 {
-	if (!SetNewFormat(NewFormat)) return false;
+	SetNewFormat(NewFormat);
 	SetBufferSamples(NewFormat.Frames);
 	MixFormat = NewFormat;
 	return true;
@@ -99,6 +99,7 @@ CAdvancedMixer::DeleteNode(ListenersNode* pNode)
 	while (pCurrent) {
 		if (pCurrent == pNode) {
 			if (pLastListener == pCurrent) pLastListener = pCurrent->pPrev;
+			if (pFirstListener == pCurrent) pFirstListener = pCurrent->pNext;
 			if (pCurrent->pPrev) pCurrent->pPrev->pNext = pCurrent->pNext;
 			if (pCurrent->pNext) pCurrent->pNext->pPrev = pCurrent->pPrev;
 			_RELEASE(pCurrent->pListener);
@@ -124,8 +125,13 @@ GetFormatListener(char* pListenerOpenLink)
 bool 
 CAdvancedMixer::AddEmitterToListener(ListenersNode* pListener, IBaseEmitter* pEmmiter)
 {
+	PcmFormat tempFormat = {};
 	if (!pListener->pListener->AddEmitter(pEmmiter)) return false;
 	pEmmiter->SetListener(pListener->pListener);
+
+	pListener->pListener->GetFormat(tempFormat);
+	pEmmiter->SetFormat(&tempFormat);
+
 	return true;
 }
 

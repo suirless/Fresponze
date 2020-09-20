@@ -157,6 +157,9 @@ CRIFFMediaResource::Read(fr_i64 FramesCount, fr_f32** ppFloatData)
 		return 0;
 	}
 
+	tempBuffer.Resize((fr_i32)(std::max(FramesCount, frame_out) * fileFormat.Channels));
+	transferBuffers.Resize(fileFormat.Channels, (fr_i32)std::max(FramesCount, frame_out));
+
 	if (!ReadRaw(FreeFrames, transferBuffers.GetBuffers())) return 0;
 	/* Copy data to 64-bit float buffer and resample to output format */
 	if (outputFormat.SampleRate != fileFormat.SampleRate) {
@@ -187,8 +190,6 @@ CRIFFMediaResource::Read(fr_i64 FramesCount, fr_f32** ppFloatData)
 fr_i64
 CRIFFMediaResource::ReadRaw(fr_i64 FramesCount, fr_f32** ppFloatData)
 {
-	tempBuffer.Resize((fr_i32)FramesCount * fileFormat.Channels);
-	transferBuffers.Resize(fileFormat.Channels, (fr_i32)FramesCount);
 
 	/* Convert interleaved to planar buffer */
 	for (fr_i64 i = 0; i < FramesCount * fileFormat.Channels; i++) {
