@@ -76,6 +76,8 @@ CResonanceEmitter::DeleteEffect(IBaseEffect* pNewEffect)
     EffectNodeStruct* pNode = pFirstEffect;
     while (pNode) {
         if (pNode->pEffect == pNewEffect) {
+            if (pNode == pFirstEffect) pFirstEffect = pFirstEffect->pNext;
+            if (pNode == pLastEffect) pLastEffect = pLastEffect->pPrev;
             pNode->pPrev->pNext = pNode->pNext;
             pNode->pNext->pPrev = pNode->pPrev;
             _RELEASE(pNode->pEffect);
@@ -88,17 +90,17 @@ CResonanceEmitter::DeleteEffect(IBaseEffect* pNewEffect)
 void
 CResonanceEmitter::SetFormat(PcmFormat* pFormat)
 {
-    ListenerFormat = *pFormat;
-    EffectNodeStruct* pNEffect = pFirstEffect;
-    BugAssert((pFormat->SampleRate && pFormat->Frames && pFormat->Channels), "Wrong input PCM Format");
-    if (!(pFormat->SampleRate && pFormat->Frames && pFormat->Channels)) {
-        return;
-    }
+	EffectNodeStruct* pNEffect = pFirstEffect;
+	BugAssert((pFormat->SampleRate && pFormat->Frames && pFormat->Channels), "Wrong input PCM Format");
+	if (!(pFormat->SampleRate && pFormat->Frames && pFormat->Channels)) {
+		return;
+	}
 
-    while (pNEffect) {
-        pNEffect->pEffect->SetFormat(pFormat);
-        pNEffect = pNEffect->pNext;
-    }
+	ListenerFormat = *pFormat;
+	while (pNEffect) {
+		pNEffect->pEffect->SetFormat(pFormat);
+		pNEffect = pNEffect->pNext;
+	}
 
     /*
         yeah, resonance audio doesn't provide additional API to destroy object, so we

@@ -118,6 +118,8 @@ CSteamAudioEmitter::DeleteEffect(IBaseEffect* pNewEffect)
 	EffectNodeStruct* pNode = pFirstEffect;
 	while (pNode) {
 		if (pNode->pEffect == pNewEffect) {
+			if (pNode == pFirstEffect) pFirstEffect = pFirstEffect->pNext;
+			if (pNode == pLastEffect) pLastEffect = pLastEffect->pPrev;
 			pNode->pPrev->pNext = pNode->pNext;
 			pNode->pNext->pPrev = pNode->pPrev;
 			_RELEASE(pNode->pEffect);
@@ -130,8 +132,13 @@ CSteamAudioEmitter::DeleteEffect(IBaseEffect* pNewEffect)
 void
 CSteamAudioEmitter::SetFormat(PcmFormat* pFormat)
 {
-	ListenerFormat = *pFormat;
 	EffectNodeStruct* pNEffect = pFirstEffect;
+	BugAssert((pFormat->SampleRate && pFormat->Frames && pFormat->Channels), "Wrong input PCM Format");
+	if (!(pFormat->SampleRate && pFormat->Frames && pFormat->Channels)) {
+		return;
+	}
+
+	ListenerFormat = *pFormat;
 	while (pNEffect) {
 		pNEffect->pEffect->SetFormat(pFormat);
 		pNEffect = pNEffect->pNext;
