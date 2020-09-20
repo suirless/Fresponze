@@ -1512,7 +1512,7 @@ void* GetMapFileSystem();
 #define BugAssert1(xx) (xx)
 #endif
 
-#ifndef DISABLE_PERFOMANCE_DEBUG
+#ifdef ENABLE_PERFOMANCE_DEBUG
 fr_i64 DebugStamp(); 
 #define FRESPONZE_BEGIN_TEST \
 	{ \
