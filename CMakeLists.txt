@@ -189,7 +189,6 @@ endif()
 
 add_subdirectory(${R8BRAIN_DIR})
 
-
 if (BUILD_FRESPONZE_STATIC)
     add_library(${FRESPONZE_LIBRARY_NAME} STATIC ${FRESPONZE_SOURCES})
 else()
@@ -220,12 +219,12 @@ endif()
 
 if (BUILD_OPUSFILE_API)
     target_compile_definitions(${FRESPONZE_LIBRARY_NAME} PUBLIC FRESPONZE_USE_OPUS)
+    target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OPUS_INCLUDE_DIR})
+    target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OGG_INCLUDE_DIR})
 endif()
 
 target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/r8brain-free-src)
 target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/resonance-audio/resonance_audio/api)
-target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OPUS_INCLUDE_DIR})
-target_include_directories(${FRESPONZE_LIBRARY_NAME} PUBLIC ${OGG_INCLUDE_DIR})
 
 if (BUILD_RESONANCE_AUDIO_API)
     if (WIN32)
@@ -287,3 +286,5 @@ if (BUILD_EXAMPLES)
         target_link_libraries(custom_callback imgui ${FRESPONZE_LIBRARY_NAME} OpenGL::GL glfw pthread GLEW::GLEW)
     endif()
 endif()
+
+add_library(Fresponze::fresponze ALIAS ${FRESPONZE_LIBRARY_NAME})
