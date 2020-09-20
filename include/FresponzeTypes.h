@@ -214,107 +214,6 @@ typedef struct
 	Vec2 mat[4];
 } VMatrix2x4;
 
-typedef enum
-{
-	ChannelUndefined = 0x7fffffff,
-	ChannelMono = 0,
-	ChannelLeft,
-	ChannelRight,
-	ChannelCenter,
-	ChannelLFE,
-	ChannelLeftSurround,
-	ChannelRightSurround,
-	ChannelLeftCenter,
-	ChannelRightCenter,
-	ChannelSurround,
-	ChannelCenterSurround = ChannelSurround,
-	ChannelSideLeft,
-	ChannelSideRight,
-	ChannelTopMiddle,
-	ChannelTopFL,
-	ChannelTopFC,
-	ChannelTFR,
-	ChannelTRL,
-	ChannelTRC,
-	ChannelTRR,
-	ChannelLFE2
-} BaseSpeakerType;
-
-typedef enum
-{
-	ArrangementChannelsUserDefined = -2,
-	ArrangementChannelsEmpty = -1,
-	ArrangementChannelsMono = 0,
-	ArrangementChannelsStereo,
-	ArrangementChannelsStereoSurround,
-	ArrangementChannelsStereoCenter,
-	ArrangementChannelsStereoSide,
-	ArrangementChannelsStereoCLfe,
-	ArrangementChannels30Cine,
-	ArrangementChannels30Music,
-	ArrangementChannels31Cine,
-	ArrangementChannels31Music,
-	ArrangementChannels40Cine,
-	ArrangementChannels40Music,
-	ArrangementChannels41Cine,
-	ArrangementChannels41Music,
-	ArrangementChannels50,
-	ArrangementChannels51,
-	ArrangementChannels60Cine,
-	ArrangementChannels60Music,
-	ArrangementChannels61Cine,
-	ArrangementChannels61Music,
-	ArrangementChannels70Cine,
-	ArrangementChannels70Music,
-	ArrangementChannels71Cine,
-	ArrangementChannels71Music,
-	ArrangementChannels80Cine,
-	ArrangementChannels80Music,
-	ArrangementChannels81Cine,
-	ArrangementChannels81Music,
-	ArrangementChannels102,
-	ArrangementChannelsNULL
-} BaseSpeakerArrangementType;
-
-typedef struct
-{
-	int ChannelsCount;
-	int ArrangmentType;
-	int SpeakersTypes[MAX_CHANNELS];		// REAPER can support 64 channels
-} BaseSpeakerArrangement;
-
-typedef enum
-{
-	CategoryUnknown = 0,
-	CategoryEffect,
-	CategorySynth,
-	CategoryAnalysis,
-	CategoryMastering,
-	CategorySpacializer,
-	CategoryRoomFx,
-	CategorySurroundFx,
-	CategoryRestoration,
-	CategoryOfflineProcess,
-	CategoryShell,
-	CategoryGenerator,
-	CategoryMaxCount
-} BasePluginCategory;
-
-typedef struct
-{
-	fr_i32 NoteLength;
-	fr_i32 NoteOffset;
-	fr_i8 Data[4];
-	fr_i8 DetuneLevel;
-	fr_i8 NoteOffVelocity;
-} MIDIEvent;
-
-typedef struct
-{
-	fr_i32 EventsCount;
-	MIDIEvent* pEventsArray;
-}  MIDIEvents;
-
 typedef struct
 {
 	fr_i16 Index;
@@ -1391,6 +1290,7 @@ GetDebugTime(char* pToPrint, size_t BufSize)
 #else
 
 #endif
+
 	Time_ -= TickCount;
 	fr_u64 Time_MS = Time_ % 1000; Time_ = Time_ / 1000;
 	fr_u64 Time_Sec = Time_ % 60;   Time_ = Time_ / 60;
@@ -1523,6 +1423,6 @@ fr_i64 DebugStamp();
 		TypeToLog(DebugCounterTick); \
 	}
 #else
-#define BEGIN_TEST 
-#define END_TEST
+#define FRESPONZE_BEGIN_TEST 
+#define FRESPONZE_END_TEST
 #endif
