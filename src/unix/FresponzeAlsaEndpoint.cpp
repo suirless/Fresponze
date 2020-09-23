@@ -87,10 +87,32 @@ bool CAlsaAudioEndpoint::SetDeviceFormat(PcmFormat DeviceFormat)
 {
     snd_pcm_format_t DeviceSampleFormat = (DeviceFormat.Bits == 16 ? SND_PCM_FORMAT_S16_LE : (DeviceFormat.Bits == 32 ? (SND_PCM_FORMAT_FLOAT_LE) : SND_PCM_FORMAT_FLOAT_LE));
     fr_i32 DeviceLatency = GetDeviceLatency(DeviceFormat.SampleRate, DeviceFormat.Frames);
-    int ret = snd_pcm_set_params(pAlsaHandle, DeviceSampleFormat, SND_PCM_ACCESS_RW_INTERLEAVED, DeviceFormat.Channels, DeviceFormat.SampleRate, 1, DeviceLatency);
+    int ret = 0;//snd_pcm_set_params(pAlsaHandle, DeviceSampleFormat, SND_PCM_ACCESS_RW_INTERLEAVED, DeviceFormat.Channels, DeviceFormat.SampleRate, 1, DeviceLatency);
+
+    snd_pcm_hw_params_t* Params = nullptr;
+    snd_pcm_hw_params_alloca(&Params);
+    snd_pcm_hw_params_any(pAlsaHandle, Params);
+    snd_pcm_hw_params_set_access(pAlsaHandle, Params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    snd_pcm_hw_params_set_format(pAlsaHandle, Params, SND_PCM_FORMAT_FLOAT_LE);
+    snd_pcm_hw_params_set_channels(pAlsaHandle, Params, 2);
+    snd_pcm_hw_params_set_buffer_size(pAlsaHandle, Params, DeviceFormat.Frames);
+
+    unsigned int val = DeviceFormat.SampleRate;
+    int dir = 0;
+    ret = snd_pcm_hw_params_set_rate_near(pAlsaHandle, Params, &val, &dir);
     if (ret < 0) {
         return false;
     }
+
+    ret = snd_pcm_hw_params(pAlsaHandle, Params);
+    if (ret < 0) {
+        return false;
+    }
+
+    snd_pcm_hw_params_get_rate(Params, &val, &dir);
+    DeviceFormat.SampleRate = val;
+    snd_pcm_hw_params_get_channels(Params, &val);
+    DeviceFormat.Channels = val;
 
     EndpointInfo.EndpointFormat = DeviceFormat;
     return true;
@@ -104,13 +126,90 @@ CAlsaAudioEndpoint::GetDevicePointer(
     pDevice = pAlsaHandle;
 }
 
+bool
+CAlsaAudioEndpoint::PullData(fr_f32* pData, fr_i32 DataSize)
+{
+    fr_i32 OutputDataSize = snd_pcm_writei(pAlsaHandle, pData, DataSize);
+    if (OutputDataSize < 0) {
+        OutputDataSize = snd_pcm_recover(pAlsaHandle, OutputDataSize, 0);
+        if (OutputDataSize < 0) return false;
+    }
+
+    return true;
+}
+
 void
 CAlsaAudioEndpoint::ThreadProc()
 {
+    if (!SetDeviceFormat(EndpointInfo.EndpointFormat)) return;
+    auto pOutPtr = (fr_f32*)FastMemAlloc(sizeof(fr_f32) * EndpointInfo.EndpointFormat.Frames * EndpointInfo.EndpointFormat.Channels);
     if (pAudioCallback) {
         pAudioCallback->FlushCallback();
         pAudioCallback->FormatCallback(&EndpointInfo.EndpointFormat);
     }
+
+    while (!pSyncEvent->IsRaised()) {
+        if (!pAudioCallback) {
+            pSyncEvent->Wait(100);
+            TypeToLog("ALSA: No audio callback. Waiting for pointer...");
+            continue;
+        }
+
+        fr_i32 AvailableFrames = EndpointInfo.EndpointFormat.Frames;
+        fr_i32 ErrorCallback = pAudioCallback->EndpointCallback(pOutPtr, AvailableFrames, EndpointInfo.EndpointFormat.Channels, EndpointInfo.EndpointFormat.SampleRate, RenderType);
+        if (ErrorCallback != 0) {
+            TypeToLog("ALSA: Putting empty buffer to output");
+            continue;
+        }
+
+        fr_i8* TempPtr = (fr_i8*)pOutPtr;
+        while (AvailableFrames) {
+            int err = 0;
+            while ((err = snd_pcm_writei(pAlsaHandle, TempPtr, AvailableFrames) < 0)) {
+                if (err == -EBADFD) {
+                    err = snd_pcm_recover(pAlsaHandle, err, 0);//snd_pcm_prepare(pAlsaHandle);
+                    if (err < 0) {
+                        goto endThread;
+                    }
+                }
+            }
+
+            AvailableFrames -= err;
+            TempPtr += err * EndpointInfo.EndpointFormat.Channels * sizeof(fr_f32);
+
+        }
+
+        /*
+        while (AvailableFrames > 0) {
+            fr_i32 TimeToSleep = (((double)AvailableFrames * 500.) / (double)EndpointInfo.EndpointFormat.SampleRate) ;
+            int err = snd_pcm_writei(pAlsaHandle, TempPtr, AvailableFrames);
+            if (err < 0) {
+                if (err == -EAGAIN) {
+                    usleep(1000);
+                    continue;
+                }
+
+                err = snd_pcm_recover(pAlsaHandle, err, 0);//snd_pcm_prepare(pAlsaHandle);
+                if (err < 0) {
+                    goto endThread;
+                }
+
+                continue;
+            } else if (err == 0) {
+                usleep(TimeToSleep * 1000);
+                continue;
+            }
+
+            //AvailableFrames -= AvailableFrames;
+            TempPtr += err * sizeof(fr_f32);
+            AvailableFrames -= err;
+        }
+         */
+    }
+
+    endThread:
+    FreeFastMemory(pOutPtr);
+    Close();
 }
 
 void
@@ -149,7 +248,22 @@ CAlsaAudioEndpoint::Close()
 bool
 CAlsaAudioEndpoint::Start()
 {
-    return false;
+    pthread_t tid = 0;
+    pthread_attr_t attr = {};
+    pthread_attr_init(&attr);
+
+    auto CallbackFunction = [](void* pThis) -> void* {
+        auto Endpoint = (CAlsaAudioEndpoint*)pThis;
+        Endpoint->ThreadProc();
+        pthread_exit(0);
+    };
+
+    ThreadHandle = pthread_create(&tid, &attr, CallbackFunction, this);
+    if (ThreadHandle < 0) {
+        return false;
+    }
+
+    return true;
 }
 
 bool

@@ -165,5 +165,5 @@ CPosixEvent::Wait(
 bool
 CPosixEvent::IsRaised()
 {
-    return false;
+    return Wait(0);
 }
