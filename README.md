@@ -1,4 +1,12 @@
 # Fresponze
+
+Version 1.0a is here! What's new:
+* ALSA, CoreAudio Endpoint
+* A lot of fixes
+* CMake Build system
+* Documentation on Docusaurus 2.0
+* Updated Mixer system
+
 Fast, simple and modern middleware for game engines
 
 ![Fresponze](fresponze-suirless.png)
@@ -18,8 +26,8 @@ will compile and run on Windows, macOS and Linux.
 
 # Audio backends
 * WASAPI (100%, finished)
+* ALSA (15%, in development)
 * XAudio2 (10%, in development)
-* ALSA (10%, in development)
 * AAudio (0%, in development)
 * AVAudioEngine (0%, in development)
 * CoreAudio (0%, in development)
