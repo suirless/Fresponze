@@ -34,6 +34,7 @@ public:
         Close();
     }
 
+    void GetDeviceFormat(PcmFormat& pcmFormat) override { pcmFormat = EndpointInfo.EndpointFormat; }
     void GetDevicePointer(void*& pDevice) override;
     void ThreadProc();
     void SetDeviceInfo(EndpointInformation& DeviceInfo) override;

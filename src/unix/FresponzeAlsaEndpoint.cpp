@@ -109,10 +109,8 @@ CAlsaAudioEndpoint::ThreadProc()
 {
     if (pAudioCallback) {
         pAudioCallback->FlushCallback();
-        pAudioCallback->FormatCallback(&fmtToPush);
+        pAudioCallback->FormatCallback(&EndpointInfo.EndpointFormat);
     }
-
-
 }
 
 void
