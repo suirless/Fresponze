@@ -62,6 +62,7 @@ public:
 	virtual void SetVolume(fr_f32 VolumeLevel) = 0;
 	virtual void GetVolume(fr_f32& VolumeLevel) = 0;
 
+	virtual void GetDeviceFormat(fr_i32 DeviceType, PcmFormat& pcmFormat) = 0;
 	virtual void GetEndpointInfo(fr_i32 DeviceType, EndpointInformation& endpointInfo) = 0;
 	virtual void GetRawPtr(fr_i32 DeviceType, void*& OutPtr) = 0;
 

@@ -286,6 +286,20 @@ public:
 		if (pAudioVolume) pAudioVolume->GetVirtualVolume(VolumeLevel);
 	}
 
+	void GetDeviceFormat(fr_i32 DeviceType, PcmFormat& pcmFormat) override
+	{
+		switch (DeviceType)
+		{
+		case CaptureType:
+			if (pInputEndpoint) pInputEndpoint->GetDeviceFormat(pcmFormat);
+			break;
+		case RenderType:
+		default:
+			if (pOutputEndpoint) pOutputEndpoint->GetDeviceFormat(pcmFormat);
+			break;
+		}
+	}
+
 	void GetEndpointInfo(fr_i32 DeviceType, EndpointInformation& endpointInfo) override
 	{
 		switch (DeviceType)
