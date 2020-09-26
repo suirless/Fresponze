@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        filter: url(#filter);
+      }
+
+      .cls-2 {
+        fill: #060606;
+        fill-rule: evenodd;
+      }
+    </style>
+    <filter id="filter" filterUnits="userSpaceOnUse">
+      <feFlood result="flood" flood-color="#d3d3d3"/>
+      <feComposite result="composite" operator="in" in2="SourceGraphic"/>
+      <feBlend result="blend" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="Группа_1" data-name="Группа 1" class="cls-1">
+    <path id="X" class="cls-2" d="M365.143,114.009H183.1L417.515,479.674,140.99,886.99H323.778L504.222,604.646,675.293,886.99H858.08L590.929,479.674"/>
+    <path id="Г" class="cls-2" d="M645.993,252.853H278.639V114.007H789.057"/>
+    <path id="Г_копия" data-name="Г копия" class="cls-2" d="M715.9,252.848l-46.1,0L812.889,114.009H859"/>
+  </g>
+</svg>
