@@ -19,7 +19,8 @@
 #include "Fresponze.h"
 #ifdef WINDOWS_PLATFORM
 #include "FresponzeWasapiHardware.h"
-#else
+#elif defined(LINUX_PLATFORM)
+#include "FresponzeAlsaHardware.h"
 #include <stdarg.h>
 #endif
 #include "FresponzeAdvancedMixer.h"
@@ -111,12 +112,18 @@ CFresponze::GetHardwareInterface(
 	switch (endpointType)
 	{
 	case eEndpointNoneType:
+	case eEndpointAlsaType:
+#ifdef LINUX_PLATFORM
+        *ppHardwareInterface = (void*)(new CAlsaAudioHardware((IAudioCallback*)pCustomCallback));
+        break;
+#endif
 	case eEndpointWASAPIType:
 #ifdef WINDOWS_PLATFORM
 		*ppHardwareInterface = (void*)(new CWASAPIAudioHardware((IAudioCallback*)pCustomCallback));
 		break;
 #endif
 	case eEndpointXAudio2Type:
+
 #if 0
 		*ppHardwareInterface = (void*)(new CXAudio2AudioHardware((IAudioCallback*)pCustomCallback));
 #endif

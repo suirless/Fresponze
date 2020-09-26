@@ -174,7 +174,7 @@ CAlsaAudioEnumerator::GetDefaultDevice(fr_i32 EndpointType, IAudioEndpoint*& pOu
         return false;
     }
 
-    pOutDevice = new CAlsaAudioEndpoint( RenderType, pOutputDevice);
+    pOutDevice = new CAlsaAudioEndpoint( RenderType, pOutputDevice, {});
     return true;
 }
 
