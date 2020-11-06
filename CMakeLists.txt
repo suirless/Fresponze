@@ -26,6 +26,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
 set(RESONANCE_AUDIO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/resonance-audio)
 set(R8BRAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/r8brain-free-src)
 set(OPUSFILE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/opusfile)
@@ -34,11 +38,16 @@ set(UPDATE_RESONANCE_AUDIO_DEPS_DIR "${RESONANCE_AUDIO_DIR}/third_party")
 set(BUILD_SHARED_LIBS ON)
 
 # Please, use vcpkg library for Windows builds (MSVC recommended)
+option(BUILD_ENABLE_XBOX OFF)
 option(BUILD_OPUSFILE_API "Build opusfile API." ON)
 option(BUILD_RESONANCE_AUDIO_API "Build Resonance Audio API." ON)
 option(BUILD_FRESPONZE_STATIC "Build Fresponze in static mode." OFF)
 option(BUILD_EXAMPLES "Build examples for Fresponze library." ON)
 option(USE_VCPKG "Use vcpkg instead of source packages" OFF)
+
+if (BUILD_ENABLE_XBOX)
+    include("fresponze-xbox/FresponzeXbox.cmake")
+endif()
 
 if (WIN32)
     option(BUILD_STATIC "Build libraries in static mode." ON)
@@ -122,6 +131,8 @@ if (WIN32)
     file(GLOB FRESPONZE_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/new_render/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/new_render/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.h"
     )
@@ -129,6 +140,8 @@ elseif (APPLE AND UNIX)
     file(GLOB FRESPONZE_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/new_render/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/new_render/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/macos/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/macos/*.h"
     )
@@ -136,6 +149,8 @@ elseif (UNIX AND NOT APPLE)
     file(GLOB FRESPONZE_SOURCES
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/new_render/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/new_render/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/*.h"
     )

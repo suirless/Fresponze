@@ -36,7 +36,7 @@ DebugStamp()
 	}
 
 	QueryPerformanceCounter(&larg_ret);
-	return larg_ret.QuadPart / (freq / 10000);
+	return larg_ret.QuadPart / (freq / 1000000);
 }
 
 bool

@@ -1,0 +1,3 @@
+[submodule "fresponze-xbox"]
+	path = fresponze-xbox
+	url = https://github.com/suirless/fresponze-xbox.git

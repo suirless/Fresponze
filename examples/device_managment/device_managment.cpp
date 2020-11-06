@@ -123,7 +123,7 @@ void DrawImGui()
 				pAdvancedMixer->SetMixFormat(OutputLists[current_item].EndpointFormat);
 				
 				/* Just update emitter and set listener */
-				if (pAdvancedMixer->CreateListener((void*)"X:\\test.wav", listNode, OutputLists[current_item].EndpointFormat)) {
+				if (pAdvancedMixer->CreateListener((void*)"I:\\test.opus", listNode, OutputLists[current_item].EndpointFormat)) {
 					pAdvancedMixer->AddEmitterToListener(listNode, pBaseEmitter);
 					pBaseEmitter->SetState(eReplayState);
 

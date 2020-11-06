@@ -1423,15 +1423,16 @@ void* GetMapFileSystem();
 #define BugAssert1(xx) (xx)
 #endif
 
+#define ENABLE_PERFOMANCE_DEBUG
 #ifdef ENABLE_PERFOMANCE_DEBUG
 fr_i64 DebugStamp(); 
 #define FRESPONZE_BEGIN_TEST \
 	{ \
 	fr_i64 DebugCounterTick = DebugStamp(); 
 	
-#define FRESPONZE_END_TEST \
+#define FRESPONZE_END_TEST(x) \
 	DebugCounterTick = DebugStamp() - DebugCounterTick;	\
-		TypeToLog(DebugCounterTick); \
+		TypeToLogFormated("'%s' operation passed: %i microseconds", x, DebugCounterTick); \
 	}
 #else
 #define FRESPONZE_BEGIN_TEST 
