@@ -39,6 +39,7 @@ cmake-build-debug
 
 # Folders
 .vs/
+bin/
 build/
-out
+out/
 deps/desktop.ini
