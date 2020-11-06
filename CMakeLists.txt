@@ -302,4 +302,5 @@ if (BUILD_EXAMPLES)
     endif()
 endif()
 
+fresponze_create_xbox_target(${FRESPONZE_LIBRARY_NAME})
 add_library(Fresponze::fresponze ALIAS ${FRESPONZE_LIBRARY_NAME})
