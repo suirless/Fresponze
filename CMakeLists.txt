@@ -22,6 +22,11 @@ project(Fresponze C CXX)
 include(DownloadProject.cmake)
 include(GitUtils.cmake)
 
+option(BUILD_ENABLE_XBOX ON)
+if (BUILD_ENABLE_XBOX)
+    include("fresponze-xbox/FresponzeXbox.cmake")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -38,16 +43,11 @@ set(UPDATE_RESONANCE_AUDIO_DEPS_DIR "${RESONANCE_AUDIO_DIR}/third_party")
 set(BUILD_SHARED_LIBS ON)
 
 # Please, use vcpkg library for Windows builds (MSVC recommended)
-option(BUILD_ENABLE_XBOX OFF)
 option(BUILD_OPUSFILE_API "Build opusfile API." ON)
 option(BUILD_RESONANCE_AUDIO_API "Build Resonance Audio API." ON)
 option(BUILD_FRESPONZE_STATIC "Build Fresponze in static mode." OFF)
-option(BUILD_EXAMPLES "Build examples for Fresponze library." ON)
+option(BUILD_EXAMPLES "Build examples for Fresponze library." OFF)
 option(USE_VCPKG "Use vcpkg instead of source packages" OFF)
-
-if (BUILD_ENABLE_XBOX)
-    include("fresponze-xbox/FresponzeXbox.cmake")
-endif()
 
 if (WIN32)
     option(BUILD_STATIC "Build libraries in static mode." ON)
@@ -61,28 +61,30 @@ if (USE_VCPKG)
         find_package(Opus CONFIG REQUIRED)
     endif()
 else()
-    if (UNIX AND NOT APPLE AND BUILD_EXAMPLES)
-        find_package(OpenGL REQUIRED)
-        find_package(GLEW REQUIRED)
-        if (GLEW_FOUND)
-            include_directories(${GLEW_INCLUDE_DIRS})
-            link_libraries(${GLEW_LIBRARIES})
+    if (UNIX AND NOT APPLE)
+        if (BUILD_EXAMPLES)
+            find_package(OpenGL REQUIRED)
+            find_package(GLEW REQUIRED)
+            if (GLEW_FOUND)
+                include_directories(${GLEW_INCLUDE_DIRS})
+                link_libraries(${GLEW_LIBRARIES})
+            endif()
+
+            download_project(
+                PROJ           glfw
+                GIT_REPOSITORY https://github.com/glfw/glfw.git
+                GIT_TAG        master
+                SOURCE_DIR     ${GLFW_DIR}
+                UPDATE_DISCONNECTED 1
+            )
+
+            add_subdirectory(${GLFW_DIR})
         endif()
 
         find_package(ALSA REQUIRED)
         if (ALSA_FOUND)
             include_directories(${ALSA_INCLUDE_DIRS})
-        endif(ALSA_FOUND)
-
-        download_project(
-            PROJ           glfw
-            GIT_REPOSITORY https://github.com/glfw/glfw.git
-            GIT_TAG        master
-            SOURCE_DIR     ${GLFW_DIR}
-            UPDATE_DISCONNECTED 1
-        )
-
-        add_subdirectory(${GLFW_DIR})
+        endif()
     endif()
 
     if (BUILD_OPUSFILE_API)
@@ -246,7 +248,7 @@ if (BUILD_RESONANCE_AUDIO_API)
         if (USE_VCPKG)
             target_link_libraries(${FRESPONZE_LIBRARY_NAME} Opus::opus Ogg::ogg ResonanceAudioStatic ${OPUSFILE_LIBRARY} r8brain)
         else()
-            target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain)
+            target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain )
         endif()
     elseif (UNIX AND NOT APPLE)
         target_link_libraries(${FRESPONZE_LIBRARY_NAME} opusfile ResonanceAudioStatic r8brain pthread ${ALSA_LIBRARIES})
@@ -303,6 +305,14 @@ if (BUILD_EXAMPLES)
 endif()
 
 if (BUILD_ENABLE_XBOX)
+    fresponze_create_xbox_target(ResonanceAudioObj)
+    fresponze_create_xbox_target(ResonanceAudioShared)
+    fresponze_create_xbox_target(ResonanceAudioStatic)
+    fresponze_create_xbox_target(SadieHrtfsObj)
+    fresponze_create_xbox_target(r8brain)
+    fresponze_create_xbox_target(ogg)
+    fresponze_create_xbox_target(opus)
+    fresponze_create_xbox_target(opusfile)
     fresponze_create_xbox_target(${FRESPONZE_LIBRARY_NAME})
 endif()
 
