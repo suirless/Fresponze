@@ -1079,6 +1079,19 @@ DoubleToFloat(
 	}
 }
 
+inline
+void
+DoubleToFloatSingle(
+	fr_f32* pFloat,
+	fr_f64* pDouble,
+	fr_i32 FramesCount
+)
+{
+	for (fr_i32 o = 0; o < FramesCount; o++) {
+		pFloat[o] = (fr_f32)pDouble[o];
+	}
+}
+
 #ifdef WINDOWS_PLATFORM
 inline char* utf16_to_utf8(const wchar_t* _src) {
 	char* dst;

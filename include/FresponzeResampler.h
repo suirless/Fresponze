@@ -30,6 +30,8 @@ public:
 	virtual void ResampleDouble(fr_i32 frames, fr_f64** inputData, fr_f64** outputData) = 0;
 };
 
+
+
 class CR8BrainResampler : public IBaseResampler
 {
 private:
@@ -38,15 +40,18 @@ private:
 	fr_i32 inSRate = 0;
 	fr_i32 outSRate = 0;
 	fr_i32 channels = 0;
-	C2DDoubleBuffer doubleBuffers[2] = {};
-	r8b::CDSPResampler* resampler[MAX_CHANNELS] = {};
+	fr_i32 DelayTime = 0;
+	fr_f64* StaticFloatBuffer[8] = {};
+	r8b::CDSPResampler* resampler[8] = {};
 
 public:
+	fr_f32 GetOutSampleRate() {
+		return outSRate;
+	}
+
 	~CR8BrainResampler() override
 	{
 		Destroy();
-		doubleBuffers[0].Free();
-		doubleBuffers[1].Free();
 	}
 
 	void Initialize(fr_i32 MaxBufferIn, fr_i32 InputSampleRate, fr_i32 OutputSampleRate, fr_i32 ChannelsCount, bool isLinear) override
@@ -57,24 +62,56 @@ public:
 		channels = ChannelsCount;
 		for (size_t i = 0; i < ChannelsCount; i++) {
 			resampler[i] = new r8b::CDSPResampler(inSRate, outSRate, bufLength, 2.0, isLinear ? 136.45 : 109.56, isLinear ? r8b::fprLinearPhase : r8b::fprMinPhase);
-		}	
+			StaticFloatBuffer[i] = (fr_f64*)FastMemAlloc(bufLength * sizeof(fr_f64));
+		}
+
+		Flush();
 	}
 
-	void Destroy() override
+	fr_i32 GetDelayTime()
+	{
+		return DelayTime;
+	}
+
+	void Destroy()
 	{
 		size_t index = 0;
 		for (auto& resampler_ptr : resampler) {
 			if (resampler_ptr) {
-                delete resampler_ptr;
-                resampler_ptr = nullptr;
-            }
+				delete resampler_ptr;
+				resampler_ptr = nullptr;
+			}
+		}
+
+		for (auto& float_ptr : StaticFloatBuffer) {
+			if (float_ptr) {
+				FreeFastMemory(float_ptr);
+				float_ptr = nullptr;
+			}
+		}
+	}
+
+	void Flush()
+	{
+		for (auto& elem : StaticFloatBuffer) {
+			if (elem) memset(elem, 0, bufLength * sizeof(fr_f64));
+		}
+
+		for (auto& elem : resampler) {
+			if (elem) elem->clear();
+		}
+
+		if (resampler[0]) {
+			DelayTime = resampler[0]->getInLenBeforeOutStart();
 		}
 	}
 
 	void Reset(fr_i32 MaxBufferIn, fr_i32 InputSampleRate, fr_i32 OutputSampleRate, fr_i32 ChannelsCount, bool isLinear)  override
 	{
-		Destroy();
-		Initialize(MaxBufferIn, InputSampleRate, OutputSampleRate, ChannelsCount, isLinear);
+		if (MaxBufferIn != bufLength || inSRate != InputSampleRate || outSRate != OutputSampleRate || channels != ChannelsCount) {
+			Destroy();
+			Initialize(MaxBufferIn, InputSampleRate, OutputSampleRate, ChannelsCount, isLinear);
+		}
 	}
 	
 	void ResampleDouble(fr_i32 frames, fr_f64** inputData, fr_f64** outputData)  override
@@ -89,16 +126,16 @@ public:
 	{
 		fr_i32 convertedFrames = 0;
 		CalculateFrames(frames, inSRate, outSRate, convertedFrames);
-		if (frames > bufLength) Reset(frames, inSRate, outSRate, channels, lin);
+		fr_i32 maxSize = std::max(frames, convertedFrames) * 2;
 
-		doubleBuffers[0].Resize(channels, frames);
-		doubleBuffers[1].Resize(channels, convertedFrames);
-		FloatToDouble(inputData, doubleBuffers[0].GetBuffers(), channels, frames);
+		fr_f64* floatBufTemp[8] = {};
+		FloatToDouble(inputData, StaticFloatBuffer, channels, frames);
 		for (size_t i = 0; i < channels; i++) {
-			resampler[i]->process(doubleBuffers[0][i], frames, doubleBuffers[1][i]);
+			double* tempFirstPointer = StaticFloatBuffer[i];
+			double*& tempSecondPointer = floatBufTemp[i];
+			resampler[i]->process(tempFirstPointer, frames, tempSecondPointer);
+			DoubleToFloatSingle(outputData[i], tempSecondPointer, convertedFrames);
 		}
-
-		DoubleToFloat(outputData, doubleBuffers[1].GetBuffers(), channels, convertedFrames);
 	}
 };
 

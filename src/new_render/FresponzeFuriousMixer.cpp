@@ -114,9 +114,10 @@ CFuriousMixer::DeleteNode(ListenersNode* pNode)
 	return false;
 }
 
+// The MSVC compiler don't want to inline this function, so a rename it with 'D' prefix
 inline
 void*
-GetFormatListener(char* pListenerOpenLink)
+GetDFormatListener(char* pListenerOpenLink)
 {
 	if (!strcmp(GetFilePathFormat(pListenerOpenLink), ".wav")) return new CRIFFMediaResource();
 #ifdef FRESPONZE_USE_OPUS
@@ -151,7 +152,7 @@ CFuriousMixer::CreateListener(void* pListenerOpenLink, ListenersNode*& pNewListe
 {
 	if (!ListFormat.Bits) ListFormat = MixFormat;
 
-	IMediaResource* pNewResource = (IMediaResource*)GetFormatListener((char*)pListenerOpenLink);
+	IMediaResource* pNewResource = (IMediaResource*)GetDFormatListener((char*)pListenerOpenLink);
 	if (!pNewResource) return false;
 	if (!pNewResource->OpenResource(pListenerOpenLink)) {
 		_RELEASE(pNewResource);

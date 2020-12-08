@@ -22,7 +22,7 @@ project(Fresponze C CXX)
 include(DownloadProject.cmake)
 include(GitUtils.cmake)
 
-option(BUILD_ENABLE_XBOX "Enable Xbox build via GDK" ON)
+option(BUILD_ENABLE_XBOX "Enable Xbox build via GDK" OFF)
 if (BUILD_ENABLE_XBOX)
     include("fresponze-xbox/FresponzeXbox.cmake")
     option(BUILD_RESONANCE_AUDIO_API "Build Resonance Audio API." OFF)
@@ -51,7 +51,7 @@ set(BUILD_SHARED_LIBS ON)
 
 # Please, use vcpkg library for Windows builds (MSVC recommended)
 option(BUILD_FRESPONZE_STATIC "Build Fresponze in static mode." OFF)
-option(BUILD_EXAMPLES "Build examples for Fresponze library." OFF)
+option(BUILD_EXAMPLES "Build examples for Fresponze library." ON)
 option(USE_VCPKG "Use vcpkg instead of source packages" OFF)
 
 if (WIN32)
@@ -318,7 +318,6 @@ if (BUILD_EXAMPLES)
 endif()
 
 if (BUILD_ENABLE_XBOX)
-    
     fresponze_create_xbox_target(${FRESPONZE_LIBRARY_NAME})
 endif()
 
